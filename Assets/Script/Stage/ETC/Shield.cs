@@ -2,18 +2,8 @@
 using System.Collections;
 using UnityEngine;
 
-public class Shield:MonoBehaviour
+public class Shield:Photon.MonoBehaviour
 {
-	private Shield ()
-	{
-		
-	}
-
-	void onEneble()
-	{
-		
-	}
-
 	void OnTriggerEnter(Collider collider)
 	{
 		if (collider.GetComponent<AtkElement> () == null)

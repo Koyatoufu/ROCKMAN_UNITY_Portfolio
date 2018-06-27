@@ -118,7 +118,7 @@ public class ObjectPool{
 			{
 				for(int j=0;j<nBufferAmount;j++)
 				{
-					GameObject obj = (GameObject)(MonoBehaviour.Instantiate (m_objects[i].prefabs));
+                    GameObject obj = (GameObject.Instantiate (m_objects[i].prefabs));
 					obj.name = m_objects[i].prefabs.name;
 					PooledObject (obj);
 				}
@@ -136,6 +136,9 @@ public class ObjectPool{
 
 		for(int i=0;i<m_objects.Length;i++)
 		{
+            if (m_objects[i].prefabs == null)
+                continue;
+
 			if(m_objects[i].prefabs.name.CompareTo(obj.name)==0)
 			{
 				obj.SetActive(false);
@@ -145,6 +148,8 @@ public class ObjectPool{
 				return;
 			}
 		}
+
+        GameObject.Destroy(obj);
 	}
 	public GameObject GetObject(GameObject obj)
 	{

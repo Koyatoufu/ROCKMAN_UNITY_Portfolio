@@ -37,7 +37,7 @@ public class AI{
 				yield return new WaitForSeconds (2.0f);
 			}
 			m_Unit.SetAct (E_ACT.IDLE);
-			UnitMgr.GetInst ().TurnOver ();
+			UnitMgr.Inst.TurnOver ();
 			yield return null;
 		} 
 		yield return null;
@@ -45,10 +45,10 @@ public class AI{
 
 	private void MoveUnit()
 	{
-		Panel panel = MapMgr.GetInst ().GetMapPanel (m_Unit.GetCurPanel ().GetPoint ().nX, UnitMgr.GetInst ().GetPlayer ().GetCurPanel ().GetPoint ().nZ);
-		UnitMgr.GetInst ().MoveUnit (m_Unit, m_Unit.GetCurPanel (), panel);
+		Panel panel = MapMgr.Inst.GetMapPanel (m_Unit.GetCurPanel ().GetPoint ().nX, UnitMgr.Inst.Player.GetCurPanel ().GetPoint ().nZ);
+		UnitMgr.Inst.MoveUnit (m_Unit, m_Unit.GetCurPanel (), panel);
 
-		if (m_Unit.GetCurPanel ().GetPoint ().nZ != UnitMgr.GetInst ().GetPlayer ().GetCurPanel ().GetPoint ().nZ) {
+		if (m_Unit.GetCurPanel ().GetPoint ().nZ != UnitMgr.Inst.Player.GetCurPanel ().GetPoint ().nZ) {
 			m_Unit.SetAct (E_ACT.IDLE);
 			return;
 		} 

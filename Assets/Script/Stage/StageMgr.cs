@@ -1,30 +1,31 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class StageMgr : MonoBehaviour {
+public class StageMgr : Photon.MonoBehaviour {
 
-	private static StageMgr m_pInst=null;
-	private bool m_bplay;
-	private AudioSource m_audioBgm;
-	private AudioClip m_clipDeleteEnemy;
-	private AudioClip m_clipGameover;
+	protected static StageMgr m_inst=null;
+    public static StageMgr Inst { get { return m_inst; } }
 
-	private int m_nCurTrun=0;
+	protected bool m_bplay = false;
+    public bool IsPlay { get { return m_bplay; } }
 
-	private StageMgr()
+	protected AudioSource m_audioBgm = null;
+	protected AudioClip m_clipDeleteEnemy = null;
+	protected AudioClip m_clipGameover;
+
+	protected int m_nCurTrun=0;
+    public int CurTurn { get { return m_nCurTrun; } }
+
+	protected void Awake()
 	{
-		m_pInst = this;
-		m_bplay = false;
-		m_audioBgm = null;
-		m_clipDeleteEnemy = null;
-	}
+        if(m_inst!=null)
+        {
+            Destroy(gameObject);
+            return;
+        }
 
-	public static StageMgr GetInst(){
-		return m_pInst;
-	}
+        m_inst = this;
 
-	void Awake()
-	{
 		DBMgr.InitInst ();
 		MapMgr.InitInst ();
 		UnitMgr.InitInst ();
@@ -39,132 +40,145 @@ public class StageMgr : MonoBehaviour {
 		m_clipGameover = Resources.Load<AudioClip> ("Sound/Bgm/Gameover");
 	}
 	// Use this for initialization
-	void Start () {
+	protected void Start ()
+    {
 
 		DBMgr.GetInst ().OpenConnection ();
 
 		m_audioBgm.enabled = false;
 
-		MapMgr.GetInst ().Initialize ();
-		MapMgr.GetInst ().CreateMap ();
+		MapMgr.Inst.Initialize ();
+		MapMgr.Inst.CreateMap ();
 
 		CamMgr.GetInst ().Initialize ();
 		ObjectPool.GetInst ().Initialzie ();
 		EffectMgr.GetInst ().Initailzie ();
 		ElementMgr.GetInst ().Initialize ();
-		ChipMgr.GetInst ().Initialize ();
-		UnitMgr.GetInst ().Initialize ();
+		ChipMgr.Inst.Initialize ();
+		UnitMgr.Inst.Initialize ();
 
 		EffectMgr.GetInst ().SetEffectPooled ();
 		ObjectPool.GetInst ().CreatePool ();
 
-		StartCoroutine (UnitMgr.GetInst().GenUnit());
-		UnitMgr.GetInst ().EnemyPlay ();
+		if(MultyManager.Inst==null)
+        {
+            StartCoroutine(UnitMgr.Inst.GenUnit());
+           UnitMgr.Inst.EnemyPlay();
+        }   
 	}
 	
-	// Update is called once per frame
-	void FixedUpdate () {
-		if(Application.platform == RuntimePlatform.Android)
-		{
-			if(Input.GetKey(KeyCode.Escape))
-			{
-				UIMgr.GetInst ().SetActivePause ();
-				if(UIMgr.GetInst().GetCustomed()==false)
-				{
-					TimeScaleChange ();
-				}
-			}
-		}
-	}
+    protected virtual void Update()
+    {
+        if (Application.platform == RuntimePlatform.Android)
+        {
+            if (Input.GetKey(KeyCode.Escape))
+            {
+                UIMgr.Inst.SetActivePause();
+                if (UIMgr.Inst.GetCustomed() == false)
+                {
+                    TimeScaleChange(Time.timeScale!=0f);
+                }
+            }
+        }
+    }
 
-	public IEnumerator ClearStage()
+    public void ClearStage()
+    {
+        StartCoroutine(ClearStageCoroutine(3));
+    }
+
+	protected virtual IEnumerator ClearStageCoroutine(int nStateAnim)
 	{
 		yield return null;
 		m_bplay = false;
-		UIMgr.GetInst ().SetActiveMain (false);
+		UIMgr.Inst.SetActiveMain (false);
 		yield return null;
-		StageMgr.GetInst ().ChangeEnemyDeleteBgm ();
-		UnitMgr.GetInst().GetPlayer().GetAnim ().speed = 0.0f;
-		UIMgr.GetInst ().GetMsgUI ().SetActive (true);
-		UIMgr.GetInst ().GetAnimMsgUI ().SetInteger ("CurAnim", 3);
+		Inst.ChangeEnemyDeleteBgm ();
+		UnitMgr.Inst.Player.GetAnim ().speed = 0.0f;
+		UIMgr.Inst.GetMsgUI ().SetActive (true);
+		UIMgr.Inst.GetAnimMsgUI ().SetInteger ("CurAnim", 3);
 		yield return new WaitForSeconds(3.0f);
-		UIMgr.GetInst ().GetAnimStateUI ().SetInteger ("CurAnim",1);
+		UIMgr.Inst.GetAnimStateUI ().SetInteger ("CurAnim",nStateAnim);
 		yield return new WaitForSeconds (5.0f);
 		ReleaseStage ();
 		yield return null;
 	}
-	public IEnumerator GameOver()
+
+    public void GameOver()
+    {
+        StartCoroutine(GameOverCoroutine(2));
+    }
+
+	protected virtual IEnumerator GameOverCoroutine(int nStateAnim)
 	{
-		UIMgr.GetInst ().GetMsgUI ().SetActive (true);
-		UIMgr.GetInst ().GetAnimMsgUI ().SetInteger ("CurAnim", 4);
+        yield return null;
+		UIMgr.Inst.GetMsgUI ().SetActive (true);
+		UIMgr.Inst.GetAnimMsgUI ().SetInteger ("CurAnim", 4);
 		m_bplay = false;
-		yield return new WaitForSeconds (2.0f);
-		m_audioBgm.Stop ();
+        yield return null;
+        m_audioBgm.Stop ();
 		yield return new WaitForSeconds (3.0f);
-		UIMgr.GetInst ().GetAnimStateUI ().SetInteger ("CurAnim",2);
-		yield return new WaitForSeconds (1.0f);
-		ChangeBgmGameover ();
+		UIMgr.Inst.GetAnimStateUI ().SetInteger ("CurAnim",nStateAnim);
+        yield return new WaitForSeconds(1.0f);
+        ChangeBgmGameover ();
 		yield return new WaitForSeconds (3.0f);
 		ReleaseStage ();
 		yield return null;
-
 	}
 
-	public void ReleaseStage()
+	public virtual void ReleaseStage()
 	{
-		UIMgr.GetInst ().ClearChip ();
-		UIMgr.GetInst ().ClearSelectedIcons ();
-		UIMgr.GetInst ().ClearUseChips ();
-		UnitMgr.GetInst ().ReleaseUnit ();
+		UIMgr.Inst.ClearChip ();
+		UIMgr.Inst.ClearSelectedIcons ();
+		UIMgr.Inst.ClearUseChips ();
+		UnitMgr.Inst.ReleaseUnit ();
 		EffectMgr.GetInst ().ReleaseEffect ();
 		ElementMgr.GetInst ().ReleaseElement ();
-		ChipMgr.GetInst ().ReleaseChipList ();
+		ChipMgr.Inst.ReleaseChipList ();
 		DBMgr.GetInst ().CloseConnection ();	
 		ObjectPool.GetInst ().ReleasePooled ();
 		System.GC.Collect ();
-		UnityEngine.SceneManagement.SceneManager.LoadScene("MainScene");
-	}
+        
+        if(MultyManager.Inst==null)
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainScene");
+    }
 
-	public void TimeScaleChange()
+    public virtual void TimeScaleChange(bool isPause)
 	{
-		if(Time.timeScale==0.0f)
-		{
-			Time.timeScale = 1.0f;
-		}
-		else
-		{
-			Time.timeScale = 0.0f;
-		}
+        Time.timeScale = isPause ? 0f : 1f;
 	}
 		
-	public bool GetPlay()
-	{
-		return m_bplay;
-	}
-		
-	public IEnumerator SetStart()
+    public void StageStart()
+    {
+        StartCoroutine(SetStartCoroutine());
+    }
+
+	protected IEnumerator SetStartCoroutine()
 	{
 		yield return null;
-		UIMgr.GetInst ().GetMsgUI ().SetActive (true);
-		UIMgr.GetInst ().GetAnimMsgUI ().SetInteger ("CurAnim", 1);
+		UIMgr.Inst.GetMsgUI ().SetActive (true);
+		UIMgr.Inst.GetAnimMsgUI ().SetInteger ("CurAnim", 1);
 		yield return new WaitForSeconds (1.0f);
-		UIMgr.GetInst ().GetAudioMsgUI ().enabled = true;
+		UIMgr.Inst.GetAudioMsgUI ().enabled = true;
 		yield return new WaitForSeconds(1.0f);
-		UIMgr.GetInst ().GetAudioMsgUI ().enabled = false;
-		UIMgr.GetInst ().GetMsgUI ().SetActive (false);
-		UnitMgr.GetInst().GetPlayer().GetAnim ().speed = 1.0f;
-		for(int i=0;i<UnitMgr.GetInst().GetEnemyList().Count;i++)
-		{
-			UnitMgr.GetInst().GetEnemyList()[i].GetAnim ().speed = 1.0f;
-		}
+		UIMgr.Inst.GetAudioMsgUI ().enabled = false;
+		UIMgr.Inst.GetMsgUI ().SetActive (false);
 		Time.timeScale = 0.0f;
-		UIMgr.GetInst ().SetActiveCustom ();
+		UIMgr.Inst.SetActiveCustom ();
 
-		StageMgr.GetInst ().SetStart ();
 		yield return null;
 		m_audioBgm.enabled=true;
 		m_bplay = true;
-		StartCoroutine(UnitMgr.GetInst().EnemyPlay());
+        if(MultyManager.Inst==null)
+        {
+           UnitMgr.Inst.Player.GetAnim().speed = 1.0f;
+            StartCoroutine(UnitMgr.Inst.EnemyPlay());
+            for (int i = 0; i <UnitMgr.Inst.GetEnemyList().Count; i++)
+            {
+               UnitMgr.Inst.GetEnemyList()[i].GetAnim().speed = 1.0f;
+            }
+        }
+		    
 		yield return null;
 	}
 
@@ -178,17 +192,36 @@ public class StageMgr : MonoBehaviour {
 		m_nCurTrun++;
 	}
 
-	private void ChangeEnemyDeleteBgm()
+	protected void ChangeEnemyDeleteBgm()
 	{
 		m_audioBgm.clip = m_clipDeleteEnemy;
 		m_audioBgm.Play ();
 	}
 
-	private void ChangeBgmGameover()
+    public virtual void ConfirmChips()
+    {
+        Debug.Log(UIMgr.Inst);
+        Debug.Log(ChipMgr.Inst);
+
+        if (UIMgr.Inst == null || ChipMgr.Inst == null)
+            return;
+
+        Debug.Log("Confirm Test");
+
+        UIMgr.Inst.SetActiveCustom();
+        UIMgr.Inst.SetActiveMain();
+        UIMgr.Inst.SetCustomConfirm();
+
+        UIMgr.Inst.GetGaugeImage().fillAmount = 0.0f;
+
+        ChipMgr.Inst.ConfirmUseChips();
+
+        TimeScaleChange(false);
+    }
+
+	protected void ChangeBgmGameover()
 	{
 		m_audioBgm.PlayOneShot (m_clipGameover);
 	}
-
-
 
 }

@@ -3,13 +3,7 @@ using System.Collections;
 
 public class Vulcan : AtkElement {
 
-	GameObject [] m_argoBullets;
-
-
-	protected Vulcan()
-	{
-		m_argoBullets = null;
-	}
+	GameObject [] m_argoBullets = null;
 
 	void Awake()
 	{
@@ -23,16 +17,11 @@ public class Vulcan : AtkElement {
 		}
 	}
 
-	// Use this for initialization
-	void Start () {
-	
-	}
-
 	void OnEnable()
 	{
 		m_backParent = transform.parent;
 		m_bAllive = true;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
@@ -40,7 +29,7 @@ public class Vulcan : AtkElement {
 		m_bAllive = false;
 	}
 
-	protected override IEnumerator Work ()
+	protected override IEnumerator ExecuteCoroutine ()
 	{
 		yield return new WaitUntil (()=>m_Unit!=null);
 		transform.parent = null;
@@ -66,11 +55,10 @@ public class Vulcan : AtkElement {
 			yield return null;
 		}
 
-
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		if(m_backParent!=null)
 		{

@@ -1,27 +1,29 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Panel : MonoBehaviour {
+public class Panel : Photon.MonoBehaviour {
 
 	private Point m_Point;
-	
-	public string m_szTagName;
-	private bool m_bPassable;
 
-	private Texture m_Texture;
-	private Texture m_oriTex;
-	private E_PENELSTATE m_PenelState;
+    public bool IsRed { get; set; }
+    public bool OriRed { get; set; }
 
-	public Panel()
-	{
-		m_bPassable = true;
-		m_Texture = null;
-		m_oriTex = null;
-		m_szTagName = null;
-		m_PenelState = E_PENELSTATE.NONE;
-		m_bPassable = true;
-	}
+	public bool Passable { get; set; }
 
+	private Texture m_Texture = null;
+    public Texture Texture {
+        get { return m_Texture; }
+        set {
+            m_Texture = value;
+            gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex", m_Texture);
+        }
+    }
+	private Texture m_oriTex = null;
+    public Texture OriTexture { get { return m_oriTex; } set { m_oriTex = value; } }
+    private Texture m_revTex = null;
+    public Texture RevTexture { get { return m_revTex; } set { if (m_revTex != null) return; m_revTex = value; } }
+	private E_PENELSTATE m_PenelState = E_PENELSTATE.NONE;
+    	
 	#if UNITY_ANDROID
 	void FixedUpdate()
 	{
@@ -35,19 +37,46 @@ public class Panel : MonoBehaviour {
 			{
 				if(castHit.transform.position==transform.position)
 				{
-					if (!StageMgr.GetInst ().GetPlay ())
+					if (!StageMgr.Inst.IsPlay)
 						return;
 					if(Time.timeScale==0.0f)
 						return;
-					UnitBase PlayerUnit = UnitMgr.GetInst ().GetPlayer ();
-					UnitMgr.GetInst ().MoveUnit (PlayerUnit, PlayerUnit.GetCurPanel (), this);
+					UnitBase PlayerUnit = UnitMgr.Inst.Player;
+					UnitMgr.Inst.MoveUnit (PlayerUnit, PlayerUnit.GetCurPanel (), this);
 				}
 			}
 		}
 	}
-	#endif
+    #endif
+    #if UNITY_EDITOR
+    void OnMouseDown()
+    {
+        if (!StageMgr.Inst.IsPlay)
+            return;
+        if (Time.timeScale == 0.0f)
+            return;
 
-	public void SetPenelState(E_PENELSTATE penelState){
+        UnitBase PlayerUnit =UnitMgr.Inst.Player;
+
+        if (PlayerUnit == null)
+            return;
+
+       UnitMgr.Inst.MoveUnit(PlayerUnit, PlayerUnit.GetCurPanel(), this);
+    }
+    #elif UNITY_WINDOWS
+     void OnMouseDown()
+    {
+        if (!StageMgr.Inst.IsPlay)
+            return;
+        if (Time.timeScale == 0.0f)
+            return;
+        UnitBase PlayerUnit =UnitMgr.Inst.GetPlayer();
+       UnitMgr.Inst.MoveUnit(PlayerUnit, PlayerUnit.GetCurPanel(), this);
+    }
+    #endif
+
+
+    public void SetPenelState(E_PENELSTATE penelState){
 		m_PenelState = penelState;
 	}
 	public E_PENELSTATE GetPenelState(){
@@ -60,54 +89,6 @@ public class Panel : MonoBehaviour {
 	public Point GetPoint(){
 		return m_Point;
 	}
-
-	public void SetTexture(Texture texture){
-		m_Texture = texture;
-		this.gameObject.GetComponent<Renderer>().material.SetTexture("_MainTex",m_Texture);
-	}
-	public Texture GetTexture()
-	{
-		return m_Texture;
-	}
-	public void SetOriTexture(Texture texture){
-		m_oriTex = texture;
-	}
-	public Texture GetOriTexture(){
-		return m_oriTex;
-	}
-
-	public void SetPassable(bool bPassable){
-		m_bPassable = bPassable;
-	}
-
-	public bool GetPassable(){
-		return m_bPassable;
-	}
-
-	public void SetTagName(string szTagName)
-	{
-		m_szTagName = szTagName;
-		//this.gameObject.tag = m_szTagName;
-	}
-
-	public string GetTagName()
-	{
-		return m_szTagName;
-	}
-
-	#if UNITY_EDITOR
-	void OnMouseDown()
-	{
-		
-		if (!StageMgr.GetInst ().GetPlay ())
-			return;
-		if(Time.timeScale==0.0f)
-			return;
-		UnitBase PlayerUnit = UnitMgr.GetInst ().GetPlayer ();
-		UnitMgr.GetInst ().MoveUnit (PlayerUnit, PlayerUnit.GetCurPanel (), this);
-		//UnitMgr.GetInst ().MoveUnitPath (PlayerUnit, PlayerUnit.GetCurPanel (), this);
-	}
-	#endif
 
 	public void SetColor(Color color)
 	{
@@ -146,5 +127,33 @@ public class Panel : MonoBehaviour {
 			return base.GetHashCode ();
 		}
 	}
-		
+
+    public void ReversePanel()
+    {
+        IsRed = !IsRed;
+        //TODO: 색상 변환
+
+        Texture temp = m_oriTex;
+        Texture = m_revTex;
+        m_oriTex = m_revTex;
+        m_revTex = temp;
+    }
+
+    void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
+    {
+        if (stream.isWriting)
+        {
+            stream.SendNext(IsRed);
+            stream.SendNext(m_Texture);
+            stream.SendNext(m_oriTex);
+            stream.SendNext(gameObject.activeSelf);
+        }
+        else
+        {
+            IsRed = (Panel)stream.ReceiveNext();
+            m_Texture = (Texture)stream.ReceiveNext();
+            m_oriTex = (Texture)stream.ReceiveNext();
+            gameObject.SetActive((GameObject)stream.ReceiveNext());
+        }
+    }
 }

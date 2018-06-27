@@ -6,32 +6,18 @@ using UnityEngine;
 public class ImpactBullet:AtkElement
 {
 
-	private GameObject m_goExplosion;
-
-	protected ImpactBullet ()
-	{
-		m_goExplosion = null;
-	}
+	private GameObject m_goExplosion = null;
 
 	void Awake()
 	{
 		m_nValue = 0;
 		m_fSpeed = 30.0f;
 	}
-	// Use this for initialization
-	void Start () {
-
-	}
-
-	// Update is called once per frame
-	void Update () {
-
-	}
 	void OnEnable()
 	{
 		m_backParent = transform.parent;
 		m_bAllive = true;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
@@ -46,21 +32,22 @@ public class ImpactBullet:AtkElement
 		if(pBase==null)
 			return;
 
-		if(pBase.GetType()==m_Unit.GetType())
+		if(pBase==m_Unit)
 			return;
 
 		m_goExplosion=ObjectPool.GetInst ().GetObject (EffectMgr.GetInst ().GetEffect ((int)E_EFFECTID.IMPACTEXPLOSION));
 		m_goExplosion.transform.position = transform.position;
 
-		pBase.GetDamage (m_nValue);
+        DamageFunc(pBase);
+
 		m_bAllive = false;
-		StopCoroutine (Work ());
+		StopCoroutine (ExecuteCoroutine ());
 		PooledThis ();
 	}
 
 
 
-	protected override IEnumerator Work()
+	protected override IEnumerator ExecuteCoroutine()
 	{
 		yield return new WaitUntil (() => m_Unit != null);
 		transform.parent = null;
@@ -84,11 +71,11 @@ public class ImpactBullet:AtkElement
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		if(m_goExplosion!=null)
 		{
-			StageMgr.GetInst ().StartCoroutine (PooledExplosion());
+			StageMgr.Inst.StartCoroutine (PooledExplosion());
 		}
 		if(m_backParent!=null)
 		{

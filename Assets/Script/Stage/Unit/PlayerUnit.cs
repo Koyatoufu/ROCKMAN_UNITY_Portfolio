@@ -2,47 +2,48 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
+public enum ColorDef
+{
+    Blue,
+    Red
+}
+
 public class PlayerUnit:UnitBase
 {
-	protected UnitAtk[] m_Chips=null;
+    //protected UnitAtk[] m_Chips = new UnitAtk[30];
 
-	private GameObject m_goBuster;
+    #region Instance
+
+    private GameObject m_goBuster;
+
 	private SkinnedMeshRenderer m_BusterMesh;
 
-	private delegate IEnumerator delUseChip (ChipData chipData);
-	private delUseChip[] m_arChipFunc;
+	protected delegate IEnumerator delUseChip (ChipData chipData);
+	protected delUseChip[] m_arChipFunc;
 
-	private GameObject m_goWeaponArm;
-	private GameObject m_goHand;
-	private GameObject m_goChip;
+	private GameObject m_goWeaponArm = null;
+	private GameObject m_goHand = null;
+	private GameObject m_goChip = null;
 
-	private GameObject m_goCharge;
-	private GameObject m_goChargeMax;
+	private GameObject m_goCharge = null;
+	private GameObject m_goChargeMax = null;
 
-	private GameObject m_goChargeAtk;
+	private GameObject m_goChargeAtk = null;
 
-	PlayerUnit()
+    #endregion
+
+    #region Initailize
+
+    protected override void Awake()
 	{
-		m_status.szName = "Player";
-		m_szOppoPanel = "EnemyArea";
-		m_Chips = new UnitAtk[30];
+        base.Awake();
+        //m_Chips = new UnitAtk[30];
 
-		m_fMaxChargeTime = 2.8f;
+        m_status.szName = "Player";
 
-		m_goBuster = null;
-		m_arChipFunc = null;
-		m_goHand = null;
-		m_goChip = null;
-		m_goWeaponArm = null;
+        m_fMaxChargeTime = 2.8f;
 
-		m_goCharge = null;
-		m_goChargeMax = null;
-		m_goChargeAtk = null;
-	}
-
-	void Awake()
-	{
-		m_status.nMaxHp = 100;
+        m_status.nMaxHp = 100;
 		m_status.nCurHp = m_status.nMaxHp;
 		m_status.fMoveSpeed = 5.0f;
 
@@ -54,21 +55,22 @@ public class PlayerUnit:UnitBase
 
 		this.m_anim = gameObject.GetComponent<Animator> ();
 		m_bodyMaterial = Resources.Load<Material> ("Materials/Unit/Material1");
-		m_goBuster=transform.Find("WeaponArm").gameObject;
+		m_goBuster=transform.Find ("WeaponArm").gameObject;
 		m_BusterMesh = m_goBuster.GetComponent<SkinnedMeshRenderer>();
 		InitializeDelegate ();
 
-		m_goCharge = transform.Find("Charge").gameObject;
-		m_goChargeMax = transform.Find("ChargeMax").gameObject;
+		m_goCharge = transform.Find ("Charge").gameObject;
+		m_goChargeMax = transform.Find ("ChargeMax").gameObject;
 		m_goChargeAtk = ElementMgr.GetInst ().GetElement ((int)E_ATKELEMENT.CHARGEBULLET);
 	}
 
 	// Use this for initialization
-	void Start () {
+	protected void Start ()
+    {
 		m_anim.SetInteger ("CurAnim", (int)E_PlAnimState.IDLE);
 		m_anim.speed = 0.0f;
-		m_transAtk = this.transform.Find("AtkPos").transform;
-		UIMgr.GetInst ().GetHpText ().text = m_status.nCurHp.ToString();
+		m_transAtk = this.transform.Find ("AtkPos").transform;
+		UIMgr.Inst.GetHpText ().text = m_status.nCurHp.ToString();
 
 		FindArmBone();
 		FindHandBone();
@@ -78,10 +80,12 @@ public class PlayerUnit:UnitBase
 		m_bodyMaterial.color = Color.white;
 		m_arModeFunc [0]();
 	}
-		
-	void FixedUpdate()
+
+    #endregion
+
+    protected void Update()
 	{
-		if (!StageMgr.GetInst ().GetPlay ())
+		if (StageMgr.Inst==null||!StageMgr.Inst.IsPlay)
 			return;
 
 		m_fChargeTime += Time.deltaTime * 0.3f;
@@ -107,15 +111,16 @@ public class PlayerUnit:UnitBase
 		m_goChargeMax.SetActive (false);
 	}
 
-	public override IEnumerator AttackUnit ()
+	protected override IEnumerator AttackCorutine ()
 	{
 		if(m_goChip!=null)
 		{
 			yield break;
 		}
+
 		while(m_act==E_ACT.ATK)
 		{
-			if(StageMgr.GetInst().GetPlay()==false)
+			if(StageMgr.Inst.IsPlay==false)
 			{
 				m_act = E_ACT.IDLE;
 				yield break;
@@ -144,69 +149,115 @@ public class PlayerUnit:UnitBase
 			yield return new WaitForSeconds(0.5f);
 		}
 	}
-	public override void GetDamage(int nDamage)
-	{
-		m_status.nCurHp -= nDamage;
-		m_fChargeTime = 0.0f;
-		m_bCharged = false;
-		StopCoroutine (AttackUnit());
-		StopCoroutine (CamMgr.GetInst ().SubCamActive (this.transform));
-		StopCoroutine (UseChip (0));
-		CamMgr.GetInst ().GetSubCam ().SetActive (false);
-		if(m_goChip!=null)
-		{
-			ObjectPool.GetInst ().PooledObject (m_goChip);
-			m_goChip = null;
-		}
 
-		if (m_status.nCurHp <= 0) {
-			UIMgr.GetInst ().GetHpText ().text = 0.ToString();
-			m_act=E_ACT.DIE;
-			m_anim.SetInteger ("CurAnim", (int)E_PlAnimState.FallDown);
-			Invoke ("PooledThis", 2.0f);
-			return;
-		} 
-		m_act = E_ACT.HIT;
-		m_anim.SetInteger ("CurAnim", (int)E_PlAnimState.Hit);
-		StartCoroutine (ChangeBodysAlpha());
-		UIMgr.GetInst ().GetHpText ().text = m_status.nCurHp.ToString();
-		Invoke ("ResetIdle", 0.35f);
-		
+    public override void GetDamage(int nDamage)
+	{
+        if (m_act == E_ACT.DIE)
+        {
+            HpUIChange();
+            return;
+        }   
+
+        DamageFunc(nDamage);
+        HpUIChange();
+        if (CheckDeath())
+            return;
+        HitFunc();
 	}
-		
-	public IEnumerator UseChip(int nIndex){
+
+    protected void DamageFunc(int nDamage)
+    {
+        m_status.nCurHp -= nDamage;
+        m_fChargeTime = 0.0f;
+        m_bCharged = false;
+        StopCoroutine(AttackCorutine());
+        StopCoroutine(CamMgr.GetInst().SubCamActive(this.transform));
+        StopCoroutine(UseChipCoroutine(0));
+
+        CamMgr.GetInst().GetSubCam().SetActive(false);
+        if (m_goChip != null)
+        {
+            ObjectPool.GetInst().PooledObject(m_goChip);
+            m_goChip = null;
+        }
+    }
+
+    protected virtual void HpUIChange()
+    {
+        if (m_status.nCurHp < 0)
+        {
+            m_status.nCurHp = 0;
+        }
+        else if (m_status.nCurHp > m_status.nMaxHp)
+        {
+            m_status.nCurHp = m_status.nMaxHp;
+        }
+
+        UIMgr.Inst.GetHpText().text = m_status.nCurHp.ToString();
+    }
+
+    protected bool CheckDeath()
+    {
+        if (m_act == E_ACT.DIE)
+            return true;
+
+        if (m_status.nCurHp <= 0)
+        {
+            UIMgr.Inst.GetHpText().text = 0.ToString();
+            m_act = E_ACT.DIE;
+            m_anim.SetInteger("CurAnim", (int)E_PlAnimState.FallDown);
+            return true;
+        }
+
+        return false;
+    }
+
+    protected virtual void HitFunc()
+    {
+        m_act = E_ACT.HIT;
+        m_anim.SetInteger("CurAnim", (int)E_PlAnimState.Hit);
+    }
+
+    public virtual void HitAlphaChange()
+    {
+        StartCoroutine(ChangeBodysAlphaCoroutine());
+    }
+    
+    public virtual void UseChip(int nIndex)
+    {
+        if (m_act != E_ACT.IDLE)
+            return;
+
+        StartCoroutine(UseChipCoroutine(nIndex));
+    }
+
+    protected virtual IEnumerator UseChipCoroutine(int nIndex){
 		if(m_act!=E_ACT.IDLE)
 			yield break;
 		m_fChargeTime = 0.0f;
-		ChipData ChipTmp=ChipMgr.GetInst ().GetUseChipUse (nIndex);
-		ChipMgr.GetInst ().ResetUseChip ();
+		ChipData ChipTmp=ChipMgr.Inst.GetUseChipUse (nIndex);
+        
+        ChipMgr.Inst.RemoveUseChipInUseDeck(nIndex);
+		ChipMgr.Inst.ResetUseChip ();
+
 		yield return null;
-		m_anim.SetInteger ("CurAnim", ChipTmp.nAnimIndex);
+
+        m_anim.SetInteger ("CurAnim", ChipTmp.nAnimIndex);
 		m_act=E_ACT.ATK;
 		StartCoroutine (m_arChipFunc [(int)ChipTmp.eChipType] (ChipTmp));
 		yield return null;
 	}
 
-	public void SetLock()
-	{
-		m_bLock = !m_bLock;
-		if (m_bLock == true) 
-		{
-			StartCoroutine (LockUnit());
-			return;
-		}
-		StopCoroutine (LockUnit());	
-	}
+    public virtual void UseShield()
+    {
+        if (m_act != E_ACT.IDLE && m_act!=E_ACT.ATK)
+            return;
 
-	private IEnumerator LockUnit()
-	{
-		
-		yield return null;
-	}
+        StartCoroutine(UseShieldCoroutine());
+    }
 
-	public IEnumerator UseShield()
+    protected IEnumerator UseShieldCoroutine()
 	{
-		StartCoroutine (CamMgr.GetInst ().SubCamActive (transform));
 		m_fChargeTime = 0.0f;
 		m_bCharged = false;
 		m_act = E_ACT.GUARD;
@@ -220,47 +271,55 @@ public class PlayerUnit:UnitBase
 		ResetIdle ();
 		yield return null;
 	}
-	private void ResetIdle()
+
+	public virtual void ResetIdle()
 	{
 		m_act = E_ACT.IDLE;
 		m_anim.SetInteger ("CurAnim", (int)E_PlAnimState.IDLE);
-		StopCoroutine (ChangeBodysAlpha ());
+		StopCoroutine (ChangeBodysAlphaCoroutine ());
 	}
 
-	private void PooledThis()
+	public virtual void PooledThis()
 	{
 		m_goExplosion=ObjectPool.GetInst().GetObject(m_goExplosion);
 		m_goExplosion.transform.position = this.transform.position;
-		m_CurPanel.SetPassable (true);
-		StageMgr.GetInst ().StartCoroutine (ExplosionPool());
-		ObjectPool.GetInst ().PooledObject (this.gameObject);
+		m_CurPanel.Passable = true;
+		StartCoroutine (ExplosionPool());
+        ObjectPool.GetInst().PooledObject(this.gameObject);
+    }
 
-	}
-
-	private IEnumerator ChangeBodysAlpha()
+    private IEnumerator ChangeBodysAlphaCoroutine()
 	{
 		m_arModeFunc [3]();
 
-		for(float f=0.0f;f<0.5f;f+=Time.deltaTime)
+        Color color = m_bodyMaterial.color;
+
+        for (float f=0.0f;f<0.5f;f+=Time.deltaTime)
 		{
-			m_bodyMaterial.color = new Vector4(1.0f,1.0f,1.0f,0.3f);
+            color.a = 0f;
+			m_bodyMaterial.color = color;
 			yield return null;
-			m_bodyMaterial.color = new Vector4(1.0f,1.0f,1.0f,1.0f);
+            color.a = 1f;
+			m_bodyMaterial.color = color;
 			yield return null;
 		}
+
+        color.a = 1f;
+        m_bodyMaterial.color = color;
 
 		m_arModeFunc [0]();
 
 		yield return null;
 	}
+    
+    public virtual void MultyPlayChangeBodyColor(){}
 
-
-	private void InitializeDelegate()
+    private void InitializeDelegate()
 	{
 		m_arChipFunc = new delUseChip[(int)E_CHIPTYPE.MAX];
 
-		m_arChipFunc [(int)E_CHIPTYPE.WEAPON] = UseWeapon;
-		m_arChipFunc [(int)E_CHIPTYPE.ATKEFFECT] = UseAtkEffect;
+		m_arChipFunc [(int)E_CHIPTYPE.WEAPON] = UseWeaponCoroutine;
+		m_arChipFunc [(int)E_CHIPTYPE.ATKEFFECT] = UseAtkEffectCoroutine;
 		m_arChipFunc [(int)E_CHIPTYPE.SUMMON] = UseSummon;
 		m_arChipFunc [(int)E_CHIPTYPE.RECOVERY] = UseRecovery;
 		m_arChipFunc [(int)E_CHIPTYPE.ATTACH] = UseAttach;
@@ -269,9 +328,12 @@ public class PlayerUnit:UnitBase
 		m_arChipFunc [(int)E_CHIPTYPE.NONE] = UseNone;
 	}
 
-	private IEnumerator UseWeapon(ChipData chipData)
+    #region ChipCoroutine
+
+    protected IEnumerator UseWeaponCoroutine(ChipData chipData)
 	{
-		StartCoroutine (CamMgr.GetInst ().SubCamActive (transform));
+        UseSubCam();
+
 		yield return null;
 
 		GameObject goWeapon = null;
@@ -310,7 +372,12 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
-	private IEnumerator UseAtkEffect(ChipData chipData)
+    protected virtual void UseSubCam()
+    {
+        StartCoroutine(CamMgr.GetInst().SubCamActive(transform));
+    }
+
+    private IEnumerator UseAtkEffectCoroutine(ChipData chipData)
 	{
 		yield return new WaitForSeconds (0.35f);
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
@@ -329,7 +396,7 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
-	private IEnumerator UseSummon(ChipData chipData)
+    private IEnumerator UseSummon(ChipData chipData)
 	{
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
 		yield return null;
@@ -337,7 +404,7 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
-	private IEnumerator UseSupport(ChipData chipData)
+    private IEnumerator UseSupport(ChipData chipData)
 	{
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
 		m_goChip.transform.parent = this.transform;
@@ -359,21 +426,24 @@ public class PlayerUnit:UnitBase
 		yield return null;
 
 	}
-	private IEnumerator UseAttach(ChipData chipData)
+
+    private IEnumerator UseAttach(ChipData chipData)
 	{
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
-		ChipData chipTmp=new ChipData();
-		chipTmp=ChipMgr.GetInst ().GetUseChip (0);
-
-		if(chipTmp.eChipType!=E_CHIPTYPE.ATKEFFECT&&chipTmp.eChipType!=E_CHIPTYPE.WEAPON&&chipTmp.eChipType!=E_CHIPTYPE.SUMMON&&chipTmp.eChipType!=E_CHIPTYPE.ATTACH)
+		ChipData chipTmp=ChipMgr.Inst.GetUseChip (0);
+        
+		if(chipTmp.eChipType!=E_CHIPTYPE.ATKEFFECT
+            &&chipTmp.eChipType!=E_CHIPTYPE.WEAPON
+            &&chipTmp.eChipType!=E_CHIPTYPE.SUMMON
+            &&chipTmp.eChipType!=E_CHIPTYPE.ATTACH)
 		{
 			StartCoroutine(PoofFunc ());
 			yield break;
 		}
 
 		chipTmp.nValue += chipData.nValue;
-		ChipMgr.GetInst ().SetUseChip (0,chipTmp);
-		chipTmp = ChipMgr.GetInst ().GetUseChip (0);
+		ChipMgr.Inst.SetUseChip (0,chipTmp);
+		chipTmp = ChipMgr.Inst.GetUseChip (0);
 		Debug.Log (chipTmp.nValue);
 
 		yield return null;
@@ -381,12 +451,12 @@ public class PlayerUnit:UnitBase
 		ObjectPool.GetInst ().PooledObject (m_goChip);
 		m_goChip = null;
 		ResetIdle ();
-		ChipMgr.GetInst ().ResetUseChip ();
+		ChipMgr.Inst.ResetUseChip ();
 
 		yield return null;
 	}
 
-	private IEnumerator UseArea(ChipData chipData)
+    protected virtual IEnumerator UseArea(ChipData chipData)
 	{
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
 		yield return null;
@@ -402,7 +472,7 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
-	private IEnumerator UseRecovery(ChipData chipData)
+    private IEnumerator UseRecovery(ChipData chipData)
 	{
 		m_goChip=ObjectPool.GetInst ().GetObject (chipData.objType);
 
@@ -415,13 +485,10 @@ public class PlayerUnit:UnitBase
 			yield break;
 		}
 
+        
 		m_status.nCurHp += chipData.nValue;
 
-		if(m_status.nCurHp>m_status.nMaxHp)
-		{
-			m_status.nCurHp = m_status.nMaxHp;
-		}
-		UIMgr.GetInst ().GetHpText ().text = m_status.nCurHp.ToString();
+        HpUIChange();
 
 		yield return new WaitForSeconds(0.65f);
 
@@ -436,8 +503,7 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
-
-	private IEnumerator PoofFunc()
+    private IEnumerator PoofFunc()
 	{
 		ObjectPool.GetInst ().PooledObject (m_goChip);
 		m_goChip = null;
@@ -450,8 +516,9 @@ public class PlayerUnit:UnitBase
 		yield return null;
 	}
 
+    #endregion
 
-	private void FindArmBone()
+    private void FindArmBone()
 	{
 		string szName="R_LowArm";
 		for(int i=0;i<m_BusterMesh.bones.Length;i++)
@@ -477,13 +544,3 @@ public class PlayerUnit:UnitBase
 		}
 	}
 }
-
-/*
-m_goBuster.transform.parent = null;
-		m_goBuster.transform.localScale = new Vector3 (0.0f, 0.0f, 0.0f);
-		SkinnedMeshRenderer meshWeapon=goWeapon.transform.GetComponent<SkinnedMeshRenderer> ();
-		meshWeapon.bones = m_BusterMesh.bones;
-
-		m_BusterMesh.sharedMesh= meshWeapon.sharedMesh;
-		m_BusterMesh.material = meshWeapon.material; 
-*/

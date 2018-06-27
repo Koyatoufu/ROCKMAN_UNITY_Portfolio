@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
-public class MapMgr{
+public class MapMgr
+{
 
 	private struct DIRPOINT
 	{
@@ -15,6 +16,7 @@ public class MapMgr{
 	}
 
 	private static MapMgr m_Inst=null;
+    public static MapMgr Inst { get { return m_Inst; } }
 
 	private int m_nSizeX;
 	private int m_nSizeZ;
@@ -31,6 +33,8 @@ public class MapMgr{
 	private List<C_Path> m_openPaths;
 	private List<C_Path> m_closePaths;
 
+    public bool IsCreated { get; private set; }
+
 	private MapMgr()
 	{
 		m_nSizeX = 0;
@@ -46,10 +50,6 @@ public class MapMgr{
 		{
 			m_Inst=new MapMgr();
 		}
-	}
-	public static MapMgr GetInst()
-	{
-		return m_Inst;
 	}
 
 	public void Initialize()
@@ -73,20 +73,26 @@ public class MapMgr{
 				m_arMap[nXtemp][nZTemp]=gTempPlat.GetComponent<Panel>();
 				m_arMap[nXtemp][nZTemp].transform.position=GetWorldPos(x,z);
 				m_arMap[nXtemp][nZTemp].SetPoint(x,z);
-				string tagName="playerArea";
+                bool isRed = false;
 				Texture texTmp=(Texture)Resources.Load("Texture/PanelTexture/PanelBase_B");
-				if(x>=0){
-					texTmp=(Texture)Resources.Load("Texture/PanelTexture/PanelBase_R");
-					tagName="EnemyArea";
+                Texture texRev = (Texture)Resources.Load("Texture/PanelTexture/PanelBase_R");
+                if (x>=0){
+                    Texture texComp = texTmp;
+                    texTmp = texRev;
+                    texRev = texComp;
+					isRed=true;
 				}
-				m_arMap[nXtemp][nZTemp].SetTexture(texTmp);
-				m_arMap[nXtemp][nZTemp].SetOriTexture(texTmp);
-				m_arMap[nXtemp][nZTemp].SetTagName(tagName);
-			}
+				m_arMap[nXtemp][nZTemp].Texture = texTmp;
+				m_arMap[nXtemp][nZTemp].OriTexture = texTmp;
+                m_arMap[nXtemp][nZTemp].RevTexture = texRev;
+				m_arMap[nXtemp][nZTemp].IsRed=isRed;
+                m_arMap[nXtemp][nZTemp].OriRed = isRed;
+                m_arMap[nXtemp][nZTemp].Passable = true;
+
+            }
 		}
 
-		m_arMap [0][1].SetPassable (false);
-		m_arMap [0][1].SetColor (Color.yellow);
+        IsCreated = true;
 	}
 
 	public Panel GetMapPanel(int x,int z){
@@ -237,7 +243,7 @@ public class MapMgr{
 	private List<Panel> GetNeighbor(Panel panel){
 		List<Panel> rtnList = new List<Panel> ();
 
-		if (panel.GetPassable ()==false) {
+		if (panel.Passable==false) {
 			return rtnList;
 		}
 
@@ -267,8 +273,8 @@ public class MapMgr{
 	public void resetMap(){
 		for(int i=0;i<m_arMap.Length;i++){
 			for(int j=0;i<m_arMap[i].Length;j++){
-				m_arMap[i][j].GetComponent<Renderer>().material.SetTexture("_MainTex",m_arMap[i][j].GetOriTexture());
-				m_arMap[i][j].tag=m_arMap[i][j].GetTagName();
+				m_arMap[i][j].GetComponent<Renderer>().material.SetTexture("_MainTex",m_arMap[i][j].OriTexture);
+				m_arMap[i][j].IsRed=m_arMap[i][j].OriRed;
 			}
 		}
 	}

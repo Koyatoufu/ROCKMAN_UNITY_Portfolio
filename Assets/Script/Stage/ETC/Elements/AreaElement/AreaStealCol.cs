@@ -11,8 +11,8 @@ public class AreaStealCol : AreaElement {
 		m_backParent = transform.parent;
 		m_nValue = 10;
 
-		m_goEffect = transform.Find("effect").gameObject;
-		m_goCol = transform.Find("col").gameObject;
+		m_goEffect = transform.Find ("effect").gameObject;
+		m_goCol = transform.Find ("col").gameObject;
 	}
 
 	void OnEnable()
@@ -21,7 +21,7 @@ public class AreaStealCol : AreaElement {
 		m_goEffect.SetActive (true);
 		m_goCol.SetActive (false);
 		transform.parent = null;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
@@ -39,33 +39,60 @@ public class AreaStealCol : AreaElement {
 				pBase.GetDamage (m_nValue);
 				m_goEffect.SetActive (false);
 				m_goEffect.SetActive (true);
-				StopCoroutine (Work ());
+				StopCoroutine (ExecuteCoroutine ());
 				Invoke ("PooledThis",0.5f);
 				return;
 			}
 		}
 
 		Panel pCol = collider.transform.GetComponent<Panel> ();
-		if (pCol == null)
-			return;
-		if(pCol.GetTagName().CompareTo(m_panel.GetTagName())==0)
-		{
-			Debug.Log (pCol.GetTagName());
-			PooledThis ();
-			return;
-		}
-		m_goEffect.SetActive (false);
-		m_goCol.SetActive (true);
 
-		pCol.SetTexture (m_panel.GetOriTexture());
-		pCol.SetTagName (m_panel.GetTagName());
+        if(pCol!=null)
+        {
+            int nX = pCol.GetPoint().nX;
+            int nZ = pCol.GetPoint().nZ;
 
-
-		StopCoroutine (Work ());
-		Invoke ("PooledThis",0.25f);
+            if (PhotonNetwork.room != null)
+            {
+                ChangePanelColor(pCol,nX,nZ);
+            }   
+            else
+                ChangePanelColor(pCol);
+        }
+        
+        StopCoroutine(ExecuteCoroutine());
+        Invoke ("PooledThis",0.25f);
 	}
 
-	protected override IEnumerator Work ()
+    public void ChangePanelColor(Panel pCol)
+    {
+        if (pCol.IsRed == m_panel.IsRed)
+        {
+            PooledThis();
+            return;
+        }
+        m_goEffect.SetActive(false);
+        m_goCol.SetActive(true);
+
+        pCol.ReversePanel();
+    }
+
+    public void ChangePanelColor(Panel pCol,int nX,int nZ)
+    {
+        if (pCol.IsRed == m_panel.IsRed)
+        {
+            PooledThis();
+            return;
+        }
+
+        m_goEffect.SetActive(false);
+        m_goCol.SetActive(true);
+
+        if (m_Unit.photonView.isMine)
+            m_Unit.photonView.RPC("ChangePanelColor", PhotonTargets.AllBufferedViaServer, nX, nZ);
+    }
+
+	protected override IEnumerator ExecuteCoroutine ()
 	{
 		
 		yield return new WaitUntil (()=>m_Unit!=null);
@@ -87,7 +114,7 @@ public class AreaStealCol : AreaElement {
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		transform.parent = m_backParent;
 		transform.gameObject.SetActive (false);

@@ -166,8 +166,50 @@ public class DBMgr {
 			Debug.Log (szName+ " " +cCode);
 		}
 	}
+    public void SelectStandard(int nID,out ChipData chipData)
+    {
+        chipData = new ChipData();
 
-	public void SelectEnemy(int nID)
+        m_command = m_connection.CreateCommand();
+        string str = "Select * from StandardChip where ID=" + nID;
+        m_command.CommandText = str;
+
+        int[] arCodeDBIndex = new int[4];
+        arCodeDBIndex[0] = 10;
+        arCodeDBIndex[1] = 11;
+        arCodeDBIndex[2] = 12;
+        arCodeDBIndex[3] = 13;
+
+        m_dataReader = m_command.ExecuteReader();
+        if (m_dataReader.Read())
+        {
+            chipData.szName = m_dataReader.GetString(1);
+            chipData.eType = (E_TYPE)(m_dataReader.GetInt32(2));
+            if (!m_dataReader.GetValue(3).Equals(DBNull.Value))
+                chipData.eType2 = (E_TYPE)(m_dataReader.GetInt16(3));
+            chipData.eChipType = (E_CHIPTYPE)(m_dataReader.GetInt32(4));
+            if (m_dataReader.GetValue(5).Equals(DBNull.Value) == false)
+                chipData.nValue = m_dataReader.GetInt32(5);
+            chipData.nMemory = m_dataReader.GetInt32(6);
+            chipData.szFileName = m_dataReader.GetString(7);
+            chipData.nImgID = m_dataReader.GetInt32(8);
+            chipData.nIconID = m_dataReader.GetInt32(9);
+            chipData.nAnimIndex = m_dataReader.GetInt32(14);
+            chipData.nCodeIndex = UnityEngine.Random.Range(0, 3);
+
+            char cCode = '*';
+            
+            if (!m_dataReader.GetValue(arCodeDBIndex[chipData.nCodeIndex]).Equals(DBNull.Value))
+                cCode = m_dataReader.GetString(arCodeDBIndex[chipData.nCodeIndex]).ToCharArray()[0];
+
+            string szTmp = "Prefebs/Chip/" + chipData.szFileName;
+            chipData.objType = Resources.Load<GameObject>(szTmp);
+            
+            chipData.cCode = cCode;
+        }
+    }
+
+    public void SelectEnemy(int nID)
 	{
 		m_command = m_connection.CreateCommand ();
 		string str = "Select * from EnemyList where ID="+nID;

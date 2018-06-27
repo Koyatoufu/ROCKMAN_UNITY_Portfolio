@@ -3,12 +3,7 @@ using System.Collections;
 
 public class Slash : AtkElement {
 
-	protected ParticleSystem m_particle;
-
-	protected Slash()
-	{
-		m_particle = null;
-	}
+	protected ParticleSystem m_particle = null;
 
 	void Awake()
 	{
@@ -16,25 +11,21 @@ public class Slash : AtkElement {
 		m_backParent = transform.parent;
 	}
 
-	// Use this for initialization
-	void Start () {
-	}
-
 	void OnEnable()
 	{
 		m_backParent = transform.parent;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 		m_particle.Stop ();
 	}
 	void OnDisable()
 	{
-		StopCoroutine (Work ());
+		StopCoroutine (ExecuteCoroutine ());
 		m_Unit = null;
 	}
+
 	void OnTriggerEnter(Collider collider)
 	{
-
-		if (m_Unit == null)
+        if (m_Unit == null)
 			return;
 
 		UnitBase pBase=collider.GetComponent<UnitBase> ();
@@ -42,26 +33,25 @@ public class Slash : AtkElement {
 		if(pBase==null)
 			return;
 
-		if(pBase.GetType()==m_Unit.GetType())
+		if(pBase==m_Unit)
 			return;
-		
-		pBase.GetDamage (m_nValue);
+
+        DamageFunc(pBase);
 
 	}
 
-	protected override IEnumerator Work ()
+	protected override IEnumerator ExecuteCoroutine ()
 	{
 		yield return new WaitUntil (()=>m_Unit!=null);
 		transform.parent = null;
 		transform.position = m_Unit.GetTransformAtk ().position;
 		transform.rotation = Quaternion.identity;
 		transform.forward = m_Unit.transform.forward;
-        ParticleSystem.MainModule mainTemp = m_particle.main;
-        mainTemp.startRotation = 0.0f;
-        mainTemp.startRotation = 0.0f;
+        ParticleSystem.MainModule main = m_particle.main;
+        main.startRotation = 0.0f;
 		if(transform.forward.x>0)
 		{
-			mainTemp.startRotation = 3.141592f;
+            main.startRotation = 3.141592f;
 		}
 
 		m_particle.Play ();
@@ -72,7 +62,7 @@ public class Slash : AtkElement {
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		if(m_backParent!=null)
 		{
@@ -83,6 +73,8 @@ public class Slash : AtkElement {
 				return;
 			}
 		}
+
+        Debug.Log(m_backParent);
 		base.PooledThis ();
 	}
 }

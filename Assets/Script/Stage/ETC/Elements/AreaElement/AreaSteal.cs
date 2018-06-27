@@ -24,7 +24,7 @@ public class AreaSteal : AreaElement {
 	void OnEnable()
 	{
 		m_bAllive = true;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
@@ -32,25 +32,32 @@ public class AreaSteal : AreaElement {
 		m_bAllive = false;
 	}
 
-	protected override IEnumerator Work()
+	protected override IEnumerator ExecuteCoroutine()
 	{
 		yield return new WaitUntil (()=>m_Unit!=null);
 
 		m_panel = m_Unit.GetCurPanel ();
 
 		int nIndexX = m_panel.GetPoint ().nX;
-		int nMaxSizeX = MapMgr.GetInst ().GetSizeX ();
+		int nMaxSizeX = MapMgr.Inst.GetSizeX ();
 
-		while(nIndexX<nMaxSizeX)
+        Debug.Log(nIndexX);
+		while(nIndexX<nMaxSizeX||nIndexX>0)
 		{
-			nIndexX++;
+			if(m_Unit.IsRed)
+            {
+                nIndexX--;
+            }
+            else
+            {
+                nIndexX++;
+            }
 
+			Panel pTmp = MapMgr.Inst.GetMapPanel (nIndexX, 0);
 
-			Panel pTmp = MapMgr.GetInst ().GetMapPanel (nIndexX, 0);
-
-			if(pTmp.GetTagName().CompareTo(m_panel.GetTagName())!=0)
+			if(pTmp.IsRed!=m_panel.IsRed)
 			{
-				transform.position = MapMgr.GetInst ().GetMapPanel (nIndexX, 0 ).transform.position+new Vector3(0.0f,3.0f,0.0f);
+				transform.position = MapMgr.Inst.GetMapPanel (nIndexX, 0).transform.position+new Vector3(0.0f,3.0f,0.0f);
 				break;
 			}
 		}
@@ -78,7 +85,7 @@ public class AreaSteal : AreaElement {
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		base.PooledThis ();
 	}

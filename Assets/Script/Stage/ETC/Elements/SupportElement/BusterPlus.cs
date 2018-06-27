@@ -1,23 +1,14 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class BusterPlus : SupportElement {
-
-	void Awake()
-	{
-		
-	}
-
+public class BusterPlus : SupportElement
+{
 	void OnEnable()
 	{
-		StartCoroutine (Work ());
-	}
-	void OnDisable()
-	{
-
+		StartCoroutine (ExecuteCoroutine ());
 	}
 
-	protected override IEnumerator Work ()
+	protected override IEnumerator ExecuteCoroutine ()
 	{
 		yield return new WaitUntil (()=>m_Unit!=null);
 
@@ -28,7 +19,7 @@ public class BusterPlus : SupportElement {
 
 		m_Unit.SetAttackBaseData (atk);
 
-		m_Unit.SetMaxChargeTime (m_Unit.GetMaxChargeTime()-0.3f);
+		m_Unit.MaxChargeTime = m_Unit.MaxChargeTime-0.3f;
 
 		yield return new WaitForSeconds (1.5f);
 

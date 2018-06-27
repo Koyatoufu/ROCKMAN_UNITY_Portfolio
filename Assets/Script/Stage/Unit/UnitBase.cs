@@ -2,76 +2,55 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class UnitBase : MonoBehaviour {
-	
+public class UnitBase : Photon.MonoBehaviour
+{
+	protected E_ACT m_act = E_ACT.IDLE;
 
-	protected E_ACT m_act;
+	protected Panel m_CurPanel = null;
+	protected Panel m_NextPanel = null;
+	protected List<Panel> m_listMovePanel = null;
 
-	protected Panel m_CurPanel;
-	protected Panel m_NextPanel;
-	protected List<Panel> m_listMovePanel;
+    [SerializeField]
+    protected TextMesh m_textHp = null;
+    [SerializeField]
+    protected Material m_bodyMaterial = null;
 
-	protected UnitStatus m_status;
+    protected GameObject m_goExplosion = null;
+
+    protected UnitStatus m_status;
 	protected UnitAtk m_baseAtk;
 
-	protected Animator m_anim;
-	protected string m_szOppoPanel;
-	protected TextMesh m_textHp;
+	protected Animator m_anim = null;
+    protected AI m_AI = null;
 
-	protected Material m_bodyMaterial;
-	protected AI m_AI;
-
-	protected Transform m_transAtk;
+	protected Transform m_transAtk = null;
 
 	protected delegate void delModeChange();
 	protected delModeChange[] m_arModeFunc;
 
-	protected GameObject m_goExplosion;
+	protected float m_fChargeTime = 0f;
+	protected float m_fMaxChargeTime = 0f;
+    public float MaxChargeTime { get { return m_fMaxChargeTime; } set { m_fMaxChargeTime = value; } }
 
-	protected bool m_bLock;
-	protected float m_fChargeTime;
-	protected float m_fMaxChargeTime;
-	protected bool m_bCharged;
+	protected bool m_bCharged = false;
 
+    public bool IsRed { get; set; }
 
-	public UnitBase()
+    public bool IsHoldOn { get; protected set; }
+
+    protected virtual void Awake()
 	{
 		m_act = E_ACT.IDLE;
-		m_CurPanel = null;
-		m_NextPanel = null;
-		m_status = new UnitStatus ();
-		m_baseAtk = new UnitAtk ();
-		m_listMovePanel = null;
-		m_anim = null;
-		m_szOppoPanel = null;
-		m_textHp = null;
-		m_bodyMaterial = null;
-		m_AI = null;
-		m_transAtk = null;
-		m_goExplosion = null;
 
-		m_bLock = false;
-		m_fChargeTime = 0.0f;
-		m_fMaxChargeTime = 0.0f;
-		m_bCharged = false;
+        m_arModeFunc = new delModeChange[4];
+        m_arModeFunc[0] = ChangeMaterialOpaque;
+        m_arModeFunc[1] = ChangeMaterialCutOut;
+        m_arModeFunc[2] = ChangeMaterialFade;
+        m_arModeFunc[3] = ChangeMaterialTransParent;
+    }
 
-		m_arModeFunc = new delModeChange[4];
-		m_arModeFunc [0] = ChangeMaterialOpaque;
-		m_arModeFunc [1] = ChangeMaterialCutOut;
-		m_arModeFunc [2] = ChangeMaterialFade;
-		m_arModeFunc [3] = ChangeMaterialTransParent;
-	}
-
-	void Awake()
-	{
-		m_act = E_ACT.IDLE;
-	}
-
-	public virtual void GetDamage(int nDamage){
-		
-	}
-
-	public E_ACT GetAct(){
+    #region GetSet
+    public E_ACT GetAct(){
 		return m_act;
 	}
 	public void SetAct(E_ACT act)
@@ -79,12 +58,15 @@ public class UnitBase : MonoBehaviour {
 		m_act = act;
 	}
 	public void SetCurPanel(Panel panel){
+        if (panel == null)
+            return;
+
 		if(m_CurPanel!=null)
 		{
-			m_CurPanel.SetPassable (true);
+			m_CurPanel.Passable = true;
 		}
 		m_CurPanel = panel;
-		m_CurPanel.SetPassable (false);
+		m_CurPanel.Passable = false;
 	}
 	public Panel GetCurPanel()
 	{
@@ -96,54 +78,74 @@ public class UnitBase : MonoBehaviour {
 	public void SetMovePanels(List<Panel> panels){
 		m_listMovePanel = panels;
 	}
-	public string GetOppoPanel(){
-		return m_szOppoPanel;
-	}
 	public Animator GetAnim()
 	{
 		return m_anim;
 	}
-
 	public AI GetAI()
 	{
 		return m_AI;
 	}
-		
 	public UnitStatus GetStatus()
 	{
 		return m_status;
 	}
-
 	public UnitAtk GetAttackBase()
 	{
 		return m_baseAtk;
 	}
-
 	public Transform GetTransformAtk()
 	{
 		return m_transAtk;
 	}
+    public void SetAttackBaseData(UnitAtk unitAtk)
+    {
+        m_baseAtk = unitAtk;
+    }
+    #endregion
 
-	public virtual IEnumerator AttackUnit (){
+    public virtual void GetDamage(int nDamage)
+    {
+
+    }
+
+    public virtual void AttackUnit()
+    {
+        if (m_act != E_ACT.IDLE)
+        {
+            Debug.Log(m_act);
+            return;
+        }
+            
+
+        SetAct(E_ACT.ATK);
+        StartCoroutine(AttackCorutine());
+    }
+
+	protected virtual IEnumerator AttackCorutine (){
 		yield return null;
 	}
 
-	public void SetAttackBaseData(UnitAtk unitAtk)
-	{
-		m_baseAtk = unitAtk;
-	}
+    public virtual void StopAttack()
+    {
+        SetAct(E_ACT.IDLE);
+        m_anim.SetInteger("CurAnim", (int)E_PlAnimState.IDLE);
+        StopCoroutine(AttackCorutine());
+    }
 
-	public float GetMaxChargeTime()
-	{
-		return m_fMaxChargeTime;
-	}
+    public virtual void CustomHoldOnStart()
+    {
+        IsHoldOn = true;
+    }
 
-	public void SetMaxChargeTime(float fMaxChargeTime)
-	{
-		m_fMaxChargeTime = fMaxChargeTime;
-	}
+    public virtual void CustomHoldOnEnd()
+    {
+        IsHoldOn = false;
+    }
 
-	protected void ChangeMaterialOpaque()
+    #region MaterialMode
+
+    protected void ChangeMaterialOpaque()
 	{
 		m_bodyMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 		m_bodyMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
@@ -184,7 +186,9 @@ public class UnitBase : MonoBehaviour {
 		m_bodyMaterial.renderQueue = 3000;
 	}
 
-	protected IEnumerator ExplosionPool()
+    #endregion
+
+    protected IEnumerator ExplosionPool()
 	{
 		yield return new WaitForSeconds (2.0f);
 		if(m_goExplosion!=null)
@@ -193,4 +197,13 @@ public class UnitBase : MonoBehaviour {
 		}
 		yield return null;
 	}
+
+    public virtual void PanelMoveBack(int nX)
+    {
+        if (GetCurPanel() != null)
+        {
+            Panel pDest = MapMgr.Inst.GetMapPanel(GetCurPanel().GetPoint().nX + nX, GetCurPanel().GetPoint().nZ);
+            UnitMgr.Inst.MoveUnit(this, GetCurPanel(), pDest);
+        }
+    }
 }

@@ -1,35 +1,24 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class Wave : AtkElement {
-	private Wave()
-	{
-		m_bAllive = true;
-		m_nValue = 0;
-		m_fSpeed = 0.0f;
-	}
-
+public class Wave : AtkElement
+{
 	void Awake()
 	{
-		m_fSpeed = 3.0f;
+        m_bAllive = true;
+        m_nValue = 0;
+        m_fSpeed = 0.0f;
+        m_fSpeed = 3.0f;
 	}
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
 
-	}
-	void OnEnable()
+    void OnEnable()
 	{
 		m_bAllive = true;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
-		StopCoroutine (Work ());
+		StopCoroutine (ExecuteCoroutine ());
 		m_bAllive = false;
 		m_Unit = null;
 	}
@@ -40,8 +29,11 @@ public class Wave : AtkElement {
 			return;
 		UnitBase pBase=collider.GetComponent<UnitBase> ();
 
-		if(pBase.GetType()==m_Unit.GetType())
-			return;
+        if(pBase!=m_Unit)
+        {
+            if (pBase.GetType() == m_Unit.GetType())
+                return;
+        }
 
 		pBase.GetDamage (m_Unit.GetAttackBase().nDmg);
 		PooledThis ();
@@ -49,7 +41,7 @@ public class Wave : AtkElement {
 
 
 
-	protected override IEnumerator Work()
+	protected override IEnumerator ExecuteCoroutine()
 	{
 		if(m_Unit==null)
 		{

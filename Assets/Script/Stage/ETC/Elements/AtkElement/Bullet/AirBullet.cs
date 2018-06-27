@@ -4,25 +4,17 @@ using UnityEngine;
 
 public class AirBullet:AtkElement
 {
-	protected AirBullet ()
-	{
-	}
-
 	void Awake()
 	{
 		m_nValue = 0;
 		m_fSpeed = 50.0f;
-	}
-	// Use this for initialization
-	void Start () {
-
 	}
 
 	void OnEnable()
 	{
 		m_backParent = transform.parent;
 		m_bAllive = true;
-		StartCoroutine (Work());
+		StartCoroutine (ExecuteCoroutine());
 	}
 	void OnDisable()
 	{
@@ -36,25 +28,24 @@ public class AirBullet:AtkElement
 		if(pBase==null)
 			return;
 
-		if(pBase.GetType()==m_Unit.GetType())
+		if(pBase==m_Unit)
 			return;
 
-		pBase.GetDamage (m_nValue);
-		int nX = 1;
-		if(transform.forward.x<0)
-		{
-			nX = -1;
-		}
+        int nX = 1;
+        if (transform.forward.x < 0)
+        {
+            nX = -1;
+        }
 
-		Panel pDest = MapMgr.GetInst().GetMapPanel(pBase.GetCurPanel().GetPoint().nX+nX,pBase.GetCurPanel().GetPoint().nZ);
-		UnitMgr.GetInst ().MoveUnit (pBase, pBase.GetCurPanel (), pDest);
+        DamageFuncMove(pBase,nX);
+
 		m_bAllive = false;
-		StopCoroutine (Work ());
+		StopCoroutine (ExecuteCoroutine ());
 
 		PooledThis ();
 	}
 
-	protected override IEnumerator Work ()
+    protected override IEnumerator ExecuteCoroutine ()
 	{
 		yield return new WaitUntil(()=>m_Unit!=null);
 		transform.parent = null;
@@ -78,7 +69,7 @@ public class AirBullet:AtkElement
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		if(m_backParent!=null)
 		{

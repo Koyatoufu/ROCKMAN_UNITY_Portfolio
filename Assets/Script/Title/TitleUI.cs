@@ -7,26 +7,17 @@ public class TitleUI : MonoBehaviour {
 
 	private static TitleUI m_Inst = null;
 
-	private GameObject m_objUI;
-	private GameObject m_objQuitUI;
-	private GameObject m_objPress;
-	private GameObject m_objLogo;
+	private GameObject m_objUI = null;
+	private GameObject m_objQuitUI = null;
+    [SerializeField]
+	private GameObject m_StageButton = null;
+    [SerializeField]
+    private GameObject m_NetworkButton = null;
+	private GameObject m_objLogo = null;
 
-	private Image m_imgBackground;
-	private Image m_imgTitle;
-	private Image m_imgLogo;
-
-
-	private TitleUI()
-	{
-		m_objUI = null;
-		m_imgBackground = null;
-		m_imgTitle = null;
-		m_imgLogo = null;
-		m_objQuitUI = null;
-		m_objPress = null;
-		m_objLogo = null;
-	}
+	private Image m_imgBackground = null;
+	private Image m_imgTitle = null;
+	private Image m_imgLogo = null;
 
 	public static TitleUI GetInst()
 	{
@@ -38,10 +29,9 @@ public class TitleUI : MonoBehaviour {
 		m_Inst = this;
 		m_objUI = this.gameObject;
 		m_objQuitUI = transform.Find("Quit").gameObject;
-		m_objPress = transform.Find("PressText").gameObject;
-		m_objLogo = transform.Find("Logo").gameObject;
-		m_imgBackground = transform.Find("Background").GetComponent<Image> ();
-		m_imgTitle = transform.Find("Title").GetComponent<Image> ();
+		m_objLogo = transform.Find ("Logo").gameObject;
+		m_imgBackground = transform.Find ("Background").GetComponent<Image> ();
+		m_imgTitle = transform.Find ("Title").GetComponent<Image> ();
 		m_imgLogo = m_objLogo.GetComponent<Image> ();
 	}
 
@@ -98,7 +88,10 @@ public class TitleUI : MonoBehaviour {
 		yield return new WaitForSeconds (3.0f);
 		TitleMgr.GetInst ().BgmOn ();
 		yield return new WaitForSeconds (2.0f);
-		m_objPress.SetActive (true);
+        if(m_StageButton!=null)
+		    m_StageButton.SetActive (true);
+        if(m_NetworkButton!=null)
+            m_NetworkButton.SetActive(true);
 		TitleMgr.GetInst ().SetProgress ();
 		yield return null;
 	}

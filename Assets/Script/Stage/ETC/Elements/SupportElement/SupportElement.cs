@@ -5,10 +5,6 @@ using UnityEngine;
 public class SupportElement:ElementBase
 {
 
-	protected SupportElement ()
-	{
-	}
-
 }
 
 

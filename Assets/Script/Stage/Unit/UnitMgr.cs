@@ -2,24 +2,56 @@
 using System.Collections;
 using System.Collections.Generic;
 
-public class UnitMgr{
-	private static UnitMgr m_Inst=null;
+public class UnitMgr
+{
 
-	private GameObject m_goPlayer;
-	private GameObject m_goEnemy0;
+	protected static UnitMgr m_Inst=null;
+    public static UnitMgr Inst { get { return m_Inst; } }
 
-	private UnitBase m_Player;
-	private List<UnitBase> m_EnemyList;
+	private GameObject m_goPlayer = null;
+	private GameObject m_goEnemy = null;
 
-	private int m_nCurTurn;
+	protected UnitBase m_player = null;
+    public UnitBase Player
+    {
+        get { return m_player; }
+        set
+        {
+            if (value == null)
+            {
+                m_player = null;
+                return;
+            }
 
-	private UnitMgr()
-	{
-		m_goPlayer = null;
-		m_goEnemy0 = null;
-		m_EnemyList = null;
-		m_nCurTurn = 0;
-	}
+            if (m_player != null)
+                OtherPlayer = value;
+
+            m_player = value;
+        }
+    }
+
+    protected UnitBase m_otherPlayer = null;
+    public UnitBase OtherPlayer
+    {
+        get { return m_otherPlayer; }
+        set
+        {
+            if(value==null)
+            {
+                m_otherPlayer = null;
+                return;
+            }
+
+            if (m_otherPlayer != null)
+                return;
+
+            m_otherPlayer = value;
+        }
+    }
+
+	private List<UnitBase> m_EnemyList = null;
+
+	private int m_nCurTurn = 0;
 
 	public static void InitInst()
 	{
@@ -28,52 +60,54 @@ public class UnitMgr{
 			m_Inst=new UnitMgr();
 		}
 	}
-	public static UnitMgr GetInst()
+
+	public virtual void Initialize()
 	{
-		return m_Inst;
+        m_goPlayer = (GameObject)Resources.Load("Prefebs/Char/Player/RockManExe");
+        ObjectPool.GetInst().SetPrefabs(m_goPlayer, 1);
 
-	}
+        if (MultyManager.Inst != null)
+            return;
 
-	public void Initialize()
-	{
-		m_goEnemy0 = (GameObject)Resources.Load ("Prefebs/Char/Enemy/Mettol");
-		m_goPlayer = (GameObject)Resources.Load ("Prefebs/Char/Player/RockManExe");
+        m_goEnemy = (GameObject)Resources.Load("Prefebs/Char/Enemy/Mettol");
+        ObjectPool.GetInst().SetPrefabs(m_goEnemy, 3);
+    }
 
-		ObjectPool.GetInst ().SetPrefabs (m_goEnemy0,3);
-		ObjectPool.GetInst ().SetPrefabs (m_goPlayer,1);
-	}
-	public void MoveUnit(UnitBase unit,Panel pStart,Panel pDest){
-		if (!pDest.GetPassable ())
+	public void MoveUnit(UnitBase unit,Panel pStart,Panel pDest)
+    {
+		if (!pDest.Passable)
 			return;
 
-		if (unit is PlayerUnit && pDest.GetTagName() == "EnemyArea")
-			return;
-		else if (unit is Enemy && pDest.GetTagName() == "PlayerArea")
-			return;
+        if (unit.IsRed != pDest.IsRed)
+        {
+            return;
+        }   
 			
-		unit.SetCurPanel (pDest);
-		unit.transform.position = pDest.transform.position;
+		if(unit.photonView!=null&&unit.photonView.isMine)
+        {
+            unit.photonView.RPC("MovePanel",PhotonTargets.AllBufferedViaServer, pDest.GetPoint().nX , pDest.GetPoint().nZ);
+            return;
+        }
+
+        unit.SetCurPanel(pDest);
+        unit.transform.position = pDest.transform.position;
 	}
 
 	public void MoveUnitPath(UnitBase unit,Panel pStart,Panel pDest)
 	{
-		if(MapMgr.GetInst().IsReachable(pStart,pDest)==false){
+		if(MapMgr.Inst.IsReachable(pStart,pDest)==false){
 			Debug.Log("Isn't Reachable");
 			return;
 		}
-		//int dis = MapMgr.GetInst().GetDistance (pStart.GetPoint(), pDest.GetPoint());
-		if(pDest.GetPassable()==true){
-			if(unit.GetOppoPanel().CompareTo(pDest.GetTagName())==0)
+		
+		if(pDest.Passable){
+			if(unit.IsRed!=pDest.IsRed)
 				return;
-			unit.SetMovePanels(MapMgr.GetInst().GetPathPanel(pStart,pDest));
+			unit.SetMovePanels(MapMgr.Inst.GetPathPanel(pStart,pDest));
 			unit.SetAct(E_ACT.MOVE);
 		}
 	}
 
-	public UnitBase GetPlayer()
-	{
-		return m_Player;
-	}
 	public List<UnitBase> GetEnemyList()
 	{
 		return m_EnemyList;
@@ -83,52 +117,40 @@ public class UnitMgr{
 	{
 		GameObject Players = new GameObject ("Players");
 
-		m_Player = ObjectPool.GetInst().GetObject(m_goPlayer).GetComponent<PlayerUnit> ();
-		m_Player.SetCurPanel (MapMgr.GetInst ().GetMapPanel (-2,0));
-		m_Player.transform.position = m_Player.GetCurPanel().transform.position;
-		m_Player.transform.parent = Players.transform;
-		m_Player.transform.Rotate(0.0f,90.0f,0.0f);
-		m_Player.gameObject.SetActive (true);
+		m_player = ObjectPool.GetInst().GetObject(m_goPlayer).GetComponent<PlayerUnit> ();
+		m_player.SetCurPanel (MapMgr.Inst.GetMapPanel (-2,0));
+		m_player.transform.position = m_player.GetCurPanel().transform.position;
+		m_player.transform.parent = Players.transform;
+		m_player.transform.Rotate(0.0f,90.0f,0.0f);
+		m_player.gameObject.SetActive (true);
 
 		m_EnemyList = new List<UnitBase> ();
 		m_EnemyList.Capacity = 3;
 
 		yield return null;
 		GameObject Enemys = new GameObject ("Enemys");
-		Enemy enemyUnit = ObjectPool.GetInst().GetObject(m_goEnemy0).GetComponent<Enemy> ();
-		enemyUnit.SetCurPanel (MapMgr.GetInst ().GetMapPanel (1,-1));
-		enemyUnit.transform.position = enemyUnit.GetCurPanel().transform.position;
-		enemyUnit.transform.parent = Enemys.transform;
-		enemyUnit.transform.Rotate(0.0f,-90.0f,0.0f);
-		enemyUnit.gameObject.SetActive (true);
-		m_EnemyList.Insert (0,enemyUnit);
-		yield return new WaitForSeconds (0.5f);
+		
 
-		enemyUnit = ObjectPool.GetInst().GetObject(m_goEnemy0).GetComponent<Enemy> ();
-		enemyUnit.SetCurPanel (MapMgr.GetInst ().GetMapPanel (1,1));
-		enemyUnit.transform.position = enemyUnit.GetCurPanel().transform.position;
-		enemyUnit.transform.parent = Enemys.transform;
-		enemyUnit.transform.Rotate(0.0f,-90.0f,0.0f);
-		enemyUnit.gameObject.SetActive (true);
-		m_EnemyList.Insert (1,enemyUnit);
-		yield return new WaitForSeconds (0.5f);
+		for(int i=0;i<3;i++)
+        {
+            Enemy enemyUnit = ObjectPool.GetInst().GetObject(m_goEnemy).GetComponent<Enemy>();
+            enemyUnit.SetCurPanel(MapMgr.Inst.GetMapPanel(i, Random.Range(-1, 2)));
+            enemyUnit.transform.position = enemyUnit.GetCurPanel().transform.position;
+            enemyUnit.transform.parent = Enemys.transform;
+            enemyUnit.transform.Rotate(0.0f, -90.0f, 0.0f);
+            enemyUnit.gameObject.SetActive(true);
+            m_EnemyList.Insert(0, enemyUnit);
+            yield return new WaitForSeconds(0.5f);
+        }
 
-		enemyUnit = ObjectPool.GetInst().GetObject(m_goEnemy0).GetComponent<Enemy> ();
-		enemyUnit.SetCurPanel (MapMgr.GetInst ().GetMapPanel (2,0));
-		enemyUnit.transform.position = enemyUnit.GetCurPanel().transform.position;
-		enemyUnit.transform.parent = Enemys.transform;
-		enemyUnit.transform.Rotate(0.0f,-90.0f,0.0f);
-		enemyUnit.gameObject.SetActive (true);
-		m_EnemyList.Insert (2,enemyUnit);
-		yield return new WaitForSeconds (0.5f);
-
-		StageMgr.GetInst ().StartCoroutine (StageMgr.GetInst().SetStart());
+        StageMgr.Inst.StageStart();
 
 		yield return null;
 	}
 	public void ReleaseUnit()
 	{
-		m_EnemyList.Clear ();
+        if(m_EnemyList!=null)
+		    m_EnemyList.Clear ();
 	}
 
 	public IEnumerator EnemyPlay()
@@ -138,14 +160,17 @@ public class UnitMgr{
 			if (m_nCurTurn >= m_EnemyList.Count)
 				m_nCurTurn = 0;
 			yield return m_EnemyList [m_nCurTurn].GetAI ().StartAI ();
-			if(m_Player.GetAct()==E_ACT.DIE)
+
+			if(m_player.GetAct()==E_ACT.DIE)
 			{
-				StageMgr.GetInst ().StartCoroutine (StageMgr.GetInst().GameOver());
+                StageMgr.Inst.GameOver();
 				yield break;
 			}
 			yield return null;
 		}
-		StageMgr.GetInst ().StartCoroutine (StageMgr.GetInst().ClearStage());
+
+        StageMgr.Inst.ClearStage();
+
 		yield return null;
 	}
 
@@ -153,6 +178,60 @@ public class UnitMgr{
 	{
 		m_nCurTurn++;
 	}
+
+    public void RpcInit()
+    {
+        if (MultyManager.Inst == null)
+            return;
+
+        if (m_player == null)
+        {
+            Debug.Log("Player is Null");
+            return;
+        }
+        
+        if (m_otherPlayer == null)
+        {
+            Debug.Log("OtherPlayer is Null");
+            return;
+        }
+
+        if (m_player.photonView != null)
+        {
+            m_player.IsRed = m_player.photonView.owner!=PhotonNetwork.masterClient;
+            m_player.photonView.RPC("NetInit", PhotonTargets.AllBufferedViaServer);
+        }
+        if (m_otherPlayer.photonView != null)
+        {
+            m_otherPlayer.IsRed = m_otherPlayer.photonView.owner != PhotonNetwork.masterClient;
+            m_otherPlayer.photonView.RPC("NetInit", PhotonTargets.AllBufferedViaServer);
+        }   
+    }
+
+    public void CheckNetUnitDie(PlayerUnit unit)
+    {
+        if (!PhotonNetwork.connected || PhotonNetwork.room == null || PhotonNetwork.room.PlayerCount < PhotonNetwork.room.MaxPlayers)
+            return;
+
+        if ( unit==null || unit.GetAct() != E_ACT.DIE || unit.photonView == null)
+            return;
+
+        if (StageMgr.Inst.photonView == null)
+            return;
+
+        if (unit.photonView.owner == PhotonNetwork.player)
+        {
+            Debug.Log("Player Death");
+            MultyManager.Inst.ShowMessage("You Lose");
+            StageMgr.Inst.GameOver();
+        }
+        else
+        {
+            Debug.Log("Ohter Death");
+            MultyManager.Inst.ShowMessage("You Win");
+            StageMgr.Inst.ClearStage();
+        }
+    }
 }
 
 

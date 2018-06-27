@@ -4,12 +4,7 @@ using UnityEngine;
 
 public class VulcanBullet:AtkElement
 {
-	protected VulcanBullet ()
-	{
-		
-	}
-
-	private Transform m_Hit;
+	private Transform m_Hit = null;
 
 	void Awake()
 	{
@@ -18,16 +13,11 @@ public class VulcanBullet:AtkElement
 		m_backParent = transform.parent;
 	}
 
-	// Use this for initialization
-	void Start () {
-
-	}
-
 	void OnEnable()
 	{
 		m_Hit.gameObject.SetActive (false);
 		m_bAllive = true;
-		StartCoroutine (Work ());
+		StartCoroutine (ExecuteCoroutine ());
 	}
 	void OnDisable()
 	{
@@ -41,15 +31,15 @@ public class VulcanBullet:AtkElement
 		UnitBase pBase=collider.GetComponent<UnitBase> ();
 		if (pBase == null)
 			return;
-		if(pBase.GetType()==m_Unit.GetType())
+		if(pBase==m_Unit)
 			return;
-		pBase.GetDamage (m_nValue);
+        DamageFunc(pBase);
 		m_Hit.gameObject.SetActive (true);
-		StopCoroutine (Work ());
+		StopCoroutine (ExecuteCoroutine ());
 		Invoke ("PooledThis",0.1f);
 	}
 
-	protected override IEnumerator Work ()
+	protected override IEnumerator ExecuteCoroutine ()
 	{
 		yield return new WaitUntil (()=>m_Unit!=null);
 		transform.parent = null;
@@ -70,7 +60,7 @@ public class VulcanBullet:AtkElement
 		yield return null;
 	}
 
-	protected override void PooledThis ()
+	public override void PooledThis ()
 	{
 		transform.parent = m_backParent;
 		transform.gameObject.SetActive(false);

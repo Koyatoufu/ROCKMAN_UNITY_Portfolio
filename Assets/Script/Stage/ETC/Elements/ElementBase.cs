@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class ElementBase : MonoBehaviour {
+public class ElementBase : Photon.MonoBehaviour {
 
 	protected Rigidbody m_rigidBody;
 
@@ -23,12 +23,12 @@ public class ElementBase : MonoBehaviour {
 		m_backParent = null;
 	}
 
-	protected virtual IEnumerator Work()
+	protected virtual IEnumerator ExecuteCoroutine()
 	{
 		yield return null;
 	}
 
-	protected virtual void PooledThis()
+	public virtual void PooledThis()
 	{
 		ObjectPool.GetInst ().PooledObject (this.gameObject);
 	}

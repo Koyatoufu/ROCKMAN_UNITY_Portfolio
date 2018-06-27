@@ -5,19 +5,13 @@ public class TitleMgr : MonoBehaviour {
 
 	private static TitleMgr m_Inst=null;
 
-	private bool m_bTitle;
-	private bool m_bProgress;
+	private bool m_bTitle = false;
+	private bool m_bProgress = false;
+    private bool m_bLoad = false;
 
-	private AudioSource m_audioBgm;
+	private AudioSource m_audioBgm = null;
 
 	private AudioSource m_audioStart;
-
-	private TitleMgr()
-	{
-		m_bTitle = false;
-		m_bProgress = false;
-		m_audioBgm = null;
-	}
 
 	public static TitleMgr GetInst()
 	{
@@ -28,14 +22,10 @@ public class TitleMgr : MonoBehaviour {
 	{
 		m_Inst = this;
 		m_audioBgm = transform.GetComponent<AudioSource> ();
-		m_audioStart = transform.Find("TitleUI").GetComponent<AudioSource>();
+		m_audioStart = transform.Find ("TitleUI").GetComponent<AudioSource>();
 	}
 
-	// Use this for initialization
-	void Start () {
-		
-	}
-
+    /*
 	void FixedUpdate()
 	{
 		if(m_bProgress)
@@ -46,8 +36,29 @@ public class TitleMgr : MonoBehaviour {
 			}
 		}
 	}
+    */
 
-	private IEnumerator StartScene()
+    public void StageStart()
+    {
+        if (!m_bProgress)
+            return;
+        if (m_bLoad)
+            return;
+        StartCoroutine(StageCoroutine());
+        m_bLoad = true;
+    }
+
+    public void NetworkStart()
+    {
+        if (!m_bProgress)
+            return;
+        if (m_bLoad)
+            return;
+        StartCoroutine(NetWorkScnenCoroutine());
+        m_bLoad = true;
+    }
+
+    private IEnumerator StageCoroutine()
 	{
 		yield return null;
 		m_audioStart.Play ();
@@ -55,6 +66,15 @@ public class TitleMgr : MonoBehaviour {
 		UnityEngine.SceneManagement.SceneManager.LoadScene("TestStage");
 		yield return null;
 	}
+
+    private IEnumerator NetWorkScnenCoroutine()
+    {
+        yield return null;
+        m_audioStart.Play();
+        yield return new WaitForSeconds(0.8f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Lobby");
+        yield return null;
+    }
 
 	public void QuitGame()
 	{

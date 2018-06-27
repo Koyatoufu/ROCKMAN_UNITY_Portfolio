@@ -10,25 +10,19 @@ public class Enemy : UnitBase {
 	public Enemy()
 	{
 		m_status.szName = "Mattol";
-		m_szOppoPanel = "PlayerArea";
-		//m_arBodyMaterials=new Material[3];
 		m_act = E_ACT.IDLE;
 		m_AI = new AI ();
 	}
 
-	void Awake()
+	protected override void Awake()
 	{
-		m_bodyMaterial = Resources.Load<Material> ("Materials/Unit/em00100");
-		//m_arBodyMaterials[0]=transform.Find ("Helmet").GetComponent<Renderer> ().material;
-		//m_arBodyMaterials[1]=transform.Find ("Body").GetComponent<Renderer> ().material;
-		//m_arBodyMaterials[2]=transform.Find ("Leg").GetComponent<Renderer> ().material;
+        base.Awake();
 
 		m_anim = transform.GetComponent<Animator> ();
 
 		m_status.nMaxHp = 40;
 		m_status.nCurHp = m_status.nMaxHp;
 		m_status.fMoveSpeed = 5.0f;
-		m_textHp = transform.Find("HPText").GetComponent<TextMesh>();
 
 		m_baseAtk.nDmg = 10;
 		m_baseAtk.eType = E_TYPE.NONE;
@@ -41,7 +35,9 @@ public class Enemy : UnitBase {
 
 	// Use this for initialization
 	void Start () {
-		m_anim.speed = 0.0f;
+        IsRed = true;
+
+        m_anim.speed = 0.0f;
 
 		m_arModeFunc [3]();
 
@@ -51,20 +47,8 @@ public class Enemy : UnitBase {
 		m_goExplosion = EffectMgr.GetInst ().GetEffect ((int)E_EFFECTID.EXPLOSION);
 	}
 
-	void FixedUpdate()
-	{
-		
-	}
-	/*
-	void OnMouseDown()
-	{
-		//ObjectPool.GetInst ().PooledObject (this.gameObject);
-	}
-	*/
-
 	public IEnumerator FadeIn()
 	{
-
 		for(float f=0.0f;f<=1.0f;f+=0.025f)
 		{
 			/*for(int i=0;i<m_arBodyMaterials.Length;i++)
@@ -79,34 +63,28 @@ public class Enemy : UnitBase {
 
 		m_arModeFunc [0]();
 
-
 		yield return null;
 
-	}
-
-	void OnTriggerEnter(Collider collider)
-	{
-		
 	}
 
 	public override void GetDamage(int nDamage)
 	{
 		m_status.nCurHp -= nDamage;
 		if (m_status.nCurHp <= 0) {
-			m_CurPanel.SetPassable (true);
+			m_CurPanel.Passable = true;
 			m_act=E_ACT.DIE;
 			m_goExplosion=ObjectPool.GetInst().GetObject(m_goExplosion);
 			m_goExplosion.transform.position = transform.position+new Vector3(0.0f,0.5f,0.0f);
-			StageMgr.GetInst().StartCoroutine (ExplosionPool ());
+			StageMgr.Inst.StartCoroutine (ExplosionPool ());
 			ObjectPool.GetInst ().PooledObject (this.gameObject);
-			UnitMgr.GetInst ().GetEnemyList ().Remove (this);
+			UnitMgr.Inst.GetEnemyList ().Remove (this);
 		} else {
 			m_textHp.text = m_status.nCurHp.ToString ();
 		}
 	}
 
 	//Color color=new Color(1.0f,0,1.0f);
-	//gameObject.transform.Find ("Helmet").GetComponent<Renderer>().material.color=color;
+	//gameObject.transform.FindChild ("Helmet").GetComponent<Renderer>().material.color=color;
 }
 
 /*
@@ -128,4 +106,4 @@ public class Enemy : UnitBase {
 		}
 	*/
 //Color color=new Color(1.0f,0,1.0f);
-//gameObject.transform.Find ("Helmet").GetComponent<Renderer>().material.color=color;
+//gameObject.transform.FindChild ("Helmet").GetComponent<Renderer>().material.color=color;

@@ -3,9 +3,10 @@ using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
-public class ChipMgr {
-
+public class ChipMgr
+{
 	private static ChipMgr m_Inst = null;
+    public static ChipMgr Inst { get { return m_Inst; } }
 
 	private List<ChipData> m_listChips=null;
 	private List<USECHIPS> m_useChips=null;
@@ -36,11 +37,6 @@ public class ChipMgr {
 		{
 			m_Inst = new ChipMgr ();
 		}
-	}
-
-	public static ChipMgr GetInst()
-	{
-		return m_Inst;
 	}
 
 	public void Initialize()
@@ -83,8 +79,8 @@ public class ChipMgr {
 
 		for(int i=0;i<nCount;i++)
 		{
-			UIMgr.GetInst ().GetImageIcon () [i].sprite = m_arIcon [m_listChips[i].nIconID];
-			UIMgr.GetInst ().GetCodeText () [i].text = m_listChips [i].cCode.ToString ();
+			UIMgr.Inst.GetImageIcon () [i].sprite = m_arIcon [m_listChips[i].nIconID];
+			UIMgr.Inst.GetCodeText () [i].text = m_listChips [i].cCode.ToString ();
 		}
 	}
 
@@ -116,23 +112,23 @@ public class ChipMgr {
 		if (m_listChips [nIndex].bSelected == true)
 			return;
 			
-		UIMgr.GetInst ().SetImageChips (m_arChipImg[m_listChips[nIndex].nImgResourceID][m_listChips[nIndex].nImgID]);
+		UIMgr.Inst.SetImageChips (m_arChipImg[m_listChips[nIndex].nImgResourceID][m_listChips[nIndex].nImgID]);
 
 		USECHIPS useChips = new USECHIPS (m_listChips[nIndex],nIndex);
 
 		m_useChips.Insert (m_useChips.Count,useChips);
 
-		UIMgr.GetInst ().GetSelectedIcons (m_useChips.Count-1).sprite = m_arIcon [(m_useChips[m_useChips.Count-1].chipData.nIconID)];
+		UIMgr.Inst.GetSelectedIcons (m_useChips.Count-1).sprite = m_arIcon [(m_useChips[m_useChips.Count-1].chipData.nIconID)];
 		int nValue = m_useChips [m_useChips.Count - 1].chipData.nValue;
 		string szValue = " ";
 		if(nValue!=-1&&nValue!=0)
 		{
 			szValue = nValue.ToString ();
 		}
-		UIMgr.GetInst().GetSelectChipText().text=m_useChips[m_useChips.Count-1].chipData.szName+" "+szValue;
+		UIMgr.Inst.GetSelectChipText().text=m_useChips[m_useChips.Count-1].chipData.szName+" "+szValue;
 
 		SetListChipbSelect (nIndex, true);
-		UIMgr.GetInst ().GetImageIcon () [nIndex].color = Color.gray;
+		UIMgr.Inst.GetImageIcon () [nIndex].color = Color.gray;
 
 		if(m_listChips[nIndex].cCode!='*')
 		{
@@ -155,7 +151,7 @@ public class ChipMgr {
 						if(m_listChips[i].nID!=m_listChips[nIndex].nID)
 						{
 							SetListChipbSelect (i, true);
-							UIMgr.GetInst ().GetImageIcon () [i].color = Color.gray;
+							UIMgr.Inst.GetImageIcon () [i].color = Color.gray;
 						}
 					}
 				}
@@ -166,7 +162,7 @@ public class ChipMgr {
 		{
 			for(int i=0;i<5;i++)
 			{
-				UIMgr.GetInst ().GetImageIcon () [i].color = Color.gray;
+				UIMgr.Inst.GetImageIcon () [i].color = Color.gray;
 			}
 		}
 	}
@@ -179,28 +175,28 @@ public class ChipMgr {
 		}
 			
 		SetListChipbSelect (m_useChips[nIndex].nKeys, false);
-		UIMgr.GetInst ().GetImageIcon () [m_useChips[nIndex].nKeys].color = Color.white;
+		UIMgr.Inst.GetImageIcon () [m_useChips[nIndex].nKeys].color = Color.white;
 		m_useChips.RemoveAt (nIndex);
-		UIMgr.GetInst ().ClearSelectedIcons ();	
+		UIMgr.Inst.ClearSelectedIcons ();	
 		if (m_useChips.Count != 0) {
 			for (int i = 0; i < m_useChips.Count; i++) {
-				UIMgr.GetInst ().GetSelectedIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
+				UIMgr.Inst.GetSelectedIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
 			}
 
-			UIMgr.GetInst ().SetImageChips (m_arChipImg [m_useChips [m_useChips.Count - 1].chipData.nImgResourceID] [m_useChips [m_useChips.Count - 1].chipData.nImgID]);
+			UIMgr.Inst.SetImageChips (m_arChipImg [m_useChips [m_useChips.Count - 1].chipData.nImgResourceID] [m_useChips [m_useChips.Count - 1].chipData.nImgID]);
 			int nValue = m_useChips [m_useChips.Count - 1].chipData.nValue;
 			string szValue = " ";
 			if(nValue!=-1&&nValue!=0)
 			{
 				szValue = nValue.ToString ();
 			}
-			UIMgr.GetInst().GetSelectChipText().text=m_useChips[m_useChips.Count-1].chipData.szName+" "+szValue;
+			UIMgr.Inst.GetSelectChipText().text=m_useChips[m_useChips.Count-1].chipData.szName+" "+szValue;
 		} 
 		else {
 			for(int i=0;i<10;i++)
 			{
 				SetListChipbSelect (i, false);
-				UIMgr.GetInst ().GetImageIcon () [i].color = Color.white;
+				UIMgr.Inst.GetImageIcon () [i].color = Color.white;
 			}
 		}
 
@@ -209,14 +205,14 @@ public class ChipMgr {
 	public void ConfirmUseChips()
 	{
 
-		UIMgr.GetInst ().GetCardInfoText ().text ="CardInfomation";
+		UIMgr.Inst.GetCardInfoText ().text ="CardInfomation";
 
 		if(m_useChips.Count==0)
 			return;
 
 		for(int i=0;i<m_useChips.Count;i++)
 		{
-			UIMgr.GetInst ().GetUseIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
+			UIMgr.Inst.GetUseIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
 		}
 
 		int[] arData = new int[m_useChips.Count];
@@ -232,8 +228,11 @@ public class ChipMgr {
 		{
 			m_listChips.RemoveAt (arData [i]);
 		}
-			
-		UIMgr.GetInst ().GetCardInfoText ().text = m_useChips [0].chipData.szName + " " + m_useChips [0].chipData.nValue;
+
+        string text = m_useChips[0].chipData.nValue<=0
+            ? m_useChips[0].chipData.szName : m_useChips[0].chipData.szName + " " + m_useChips[0].chipData.nValue;
+
+        UIMgr.Inst.GetCardInfoText ().text = text;
 	}
 
 	public ChipData GetUseChipUse(int nIndex)
@@ -241,28 +240,37 @@ public class ChipMgr {
 		ChipData chipTmp=new ChipData();
 		if(m_useChips.Count==0)
 		{
-			chipTmp.eChipType = E_CHIPTYPE.NONE;
-			return chipTmp;
+            chipTmp.eChipType = E_CHIPTYPE.NONE;
+            return chipTmp;
 		}
 		chipTmp = m_useChips [nIndex].chipData;
-		m_useChips.RemoveAt (nIndex);
+		//m_useChips.RemoveAt (nIndex);
 		return chipTmp;
 	}
 
+    public void RemoveUseChipInUseDeck(int nIndex)
+    {
+        if (m_useChips.Count == 0)
+        {
+            return;
+        }
+
+        m_useChips.RemoveAt(nIndex);
+    }
+
 	public ChipData GetUseChip(int nIndex)
 	{
-		if(m_useChips.Count==0)
+        ChipData chipTmp = new ChipData();
+        if (m_useChips.Count==0)
+		{   
+            chipTmp.eChipType = E_CHIPTYPE.NONE;
+            return chipTmp;
+        }
+		else if(m_useChips.Count<=nIndex)
 		{
-			ChipData chipTmp = new ChipData ();
-			chipTmp.eChipType = E_CHIPTYPE.NONE;
-			return chipTmp;
-		}
-		if(m_useChips.Count<=nIndex)
-		{
-			ChipData chipTmp = new ChipData ();
-			chipTmp.eChipType = E_CHIPTYPE.NONE;
-			return chipTmp;
-		}
+            chipTmp.eChipType = E_CHIPTYPE.NONE;
+            return chipTmp;
+        }
 
 		return m_useChips [nIndex].chipData;
 	}
@@ -275,9 +283,9 @@ public class ChipMgr {
 	public void ClearUseChipData()
 	{
 		m_useChips.Clear ();
-		UIMgr.GetInst ().ClearChip ();
-		UIMgr.GetInst ().ClearSelectedIcons ();
-		UIMgr.GetInst ().ClearUseChips ();
+		UIMgr.Inst.ClearChip ();
+		UIMgr.Inst.ClearSelectedIcons ();
+		UIMgr.Inst.ClearUseChips ();
 
 		int nCount = 10;
 
@@ -288,19 +296,19 @@ public class ChipMgr {
 		for(int i=0;i<nCount;i++)
 		{
 			SetListChipbSelect (i, false);
-			UIMgr.GetInst ().GetImageIcon () [i].color = Color.white;
+			UIMgr.Inst.GetImageIcon () [i].color = Color.white;
 		}
 	}
 
 	public void ResetUseChip()
 	{
-		UIMgr.GetInst ().ClearUseChips ();
+		UIMgr.Inst.ClearUseChips ();
 		for(int i=0;i<m_useChips.Count;i++)
 		{
-			UIMgr.GetInst ().GetUseIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
+			UIMgr.Inst.GetUseIcons (i).sprite = m_arIcon [(m_useChips [i].chipData.nIconID)];
 		}
 
-		UIMgr.GetInst ().GetCardInfoText ().text ="CardInfomation";
+		UIMgr.Inst.GetCardInfoText ().text ="CardInfomation";
 
 		if(m_useChips.Count!=0)
 		{
@@ -310,7 +318,7 @@ public class ChipMgr {
 			{
 				szValue=nValue.ToString();
 			}
-			UIMgr.GetInst ().GetCardInfoText ().text = m_useChips [0].chipData.szName + " " + szValue;
+			UIMgr.Inst.GetCardInfoText ().text = m_useChips [0].chipData.szName + " " + szValue;
 		}
 	}
 
@@ -403,5 +411,5 @@ public class ChipMgr {
 //Debug.Log (arTmp[0]);
 
 
-//UIMgr.GetInst ().SetImageChips (m_arChipImg[m_listChips[nIndex].nImgResourceID][m_listChips[nIndex].nImgID]);
+//UIMgr.Inst.SetImageChips (m_arChipImg[m_listChips[nIndex].nImgResourceID][m_listChips[nIndex].nImgID]);
 //m_dicUseChips.Add (nIndex,m_listChips[nIndex]);

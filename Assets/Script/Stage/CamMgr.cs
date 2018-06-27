@@ -46,8 +46,8 @@ public class CamMgr {
 
 	public void Initialize()
 	{
-		m_goMainCam = StageMgr.GetInst().transform.Find("Main Camera").gameObject;
-		m_goSubCam = StageMgr.GetInst ().transform.Find("SubCamera").gameObject;
+		m_goMainCam = StageMgr.Inst.transform.Find("Main Camera").gameObject;
+		m_goSubCam = StageMgr.Inst.transform.Find ("SubCamera").gameObject;
 		m_bRotate=true;
 
 		m_mainCam = m_goMainCam.GetComponent<Camera> ();

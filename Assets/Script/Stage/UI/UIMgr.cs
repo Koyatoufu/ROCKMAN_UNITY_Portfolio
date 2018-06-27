@@ -2,130 +2,157 @@
 using UnityEngine.UI;
 using System.Collections;
 
-public class UIMgr :MonoBehaviour{
+public class UIMgr : Photon.MonoBehaviour
+{
 
-	private GameObject m_goMainUI;
-	private GameObject m_goCustom;
+    #region SingleTone
 
-	private Animator m_animGauge;
-	private Image m_ImgGauge;
+    private static UIMgr m_Inst = null;
+    public static UIMgr Inst { get { return m_Inst; } }
 
-	private Text m_textPlayerHP;
-	private Text m_textCardInfo;
+    #endregion
 
-	private static UIMgr m_Inst = null;
+    #region Instance
 
-	private bool m_bPause=false;
+    private Animator m_animGauge = null;
+	private Image m_ImgGauge = null;
 
-	private bool m_bGamed=false;
-	private bool m_bCustomed=false;
+    #region Serialize
+    [SerializeField]
+	protected Text m_textPlayerHP = null;
+    [SerializeField]
+	protected Text m_textCardInfo = null;
+    [SerializeField]
+    protected GameObject m_guageGo = null;
+    [SerializeField]
+    protected GameObject m_mainUIGo = null;
+    [SerializeField]
+    protected GameObject m_customGo = null;
+    [SerializeField]
+    private GameObject m_pausedButtonGo = null;
+    [SerializeField]
+    private GameObject m_pausedMenuGo = null;
+    [SerializeField]
+    private GameObject m_msgGo = null;
+    [SerializeField]
+    private GameObject m_stateBackGo = null;
 
-	private GameObject[] m_arGoChips;
-	private Image m_imgChip;
-	private Image[] m_arIconImgs;
-	private Text[] m_arTextCodes;
-	private Text m_textSelect;
+    [Header("CustomChip")]
+    [SerializeField]
+    private Image m_chipImg = null;
+    [SerializeField]
+    private Text m_textSelect = null;
+    [SerializeField]
+    private Transform m_chipInfo = null;
+    [SerializeField]
+    private Transform m_selectedChip = null;
+    [SerializeField]
+    private Transform m_battleSlot = null;
+    #endregion
 
-	private Sprite m_spriteMask;
+    protected bool m_bPause=false;
 
-	private Image[] m_arSelectIcons;
-	private Image[] m_arUseIcons;
+	protected bool m_bGamed=false;
+	protected bool m_bCustomed=false;
 
-	private GameObject m_goMsg;
-	private Animator m_animMsg;
-	private AudioSource m_audioMsg;
+	private GameObject[] m_arGoChips = new GameObject[10];
+	
+	private Image[] m_arIconImgs = new Image[10];
+	private Text[] m_arTextCodes = new Text[10];
 
-	private GameObject m_goStateBack;
-	private Animator m_animState;
+	private Sprite m_spriteMask = null;
 
-	private GameObject m_goPausedButton;
-	private GameObject m_goPausedMenu;
+	private Image[] m_arSelectIcons = new Image[5];
+	private Image[] m_arUseIcons = new Image[5];
 
-	private UIMgr()
-	{
-		m_goMainUI = null;
-		m_goCustom = null;
+	private Animator m_animMsg = null;
+	private AudioSource m_audioMsg = null;
 
-		m_ImgGauge = null;
+	private Animator m_animState = null;
 
-		m_arGoChips = new GameObject[10];
-		m_imgChip = null;
+    #endregion
 
-		m_textCardInfo = null;
-		m_arIconImgs = new Image[10];
-		m_arTextCodes = new Text[10];
+    #region Initialize
 
-		m_goMsg = null;
-		m_animMsg = null;
-		m_audioMsg = null;
-
-		m_arSelectIcons = new Image[5];
-		m_arUseIcons = new Image[5];
-		m_animState = null;
-
-		m_goPausedButton = null;
-		m_goPausedMenu = null;
-	}
-
-	public static UIMgr GetInst()
-	{
-		return m_Inst;
-	}
-
-	void Awake()
+    protected virtual void Awake()
 	{
 		m_Inst = this;
 
-		GameObject gaugeObj = transform.Find("BattleMain").Find("CustomBar").Find("Btn_Custom").gameObject;
-		m_animGauge = gaugeObj.GetComponent<Animator> ();
+		m_animGauge = m_guageGo.GetComponent<Animator> ();
 
-		m_ImgGauge = gaugeObj.GetComponent<Image> ();
+		m_ImgGauge = m_guageGo.GetComponent<Image> ();
 
-		m_goMainUI = transform.Find("BattleMain").gameObject;
-		m_goCustom = transform.Find("CustomScean").gameObject;
-		m_textPlayerHP=transform.Find("HP").Find("HPText").GetComponent<Text>();
-		m_textCardInfo = m_goMainUI.transform.Find("BattleCardSlot").Find("CardText").GetComponent<Text>();
+		m_animMsg = m_msgGo.GetComponent<Animator> ();
+		m_audioMsg = m_msgGo.GetComponent<AudioSource> ();
 
-		m_goMsg = transform.Find("Message").gameObject;
-		m_animMsg = m_goMsg.GetComponent<Animator> ();
-		m_audioMsg = m_goMsg.GetComponent<AudioSource> ();
-
-		m_goStateBack = transform.Find("StateBack").gameObject;
-		m_animState = m_goStateBack.transform.GetComponent<Animator> ();
-
-		m_goPausedMenu = transform.Find("PausedMenu").gameObject;
-		m_goPausedButton = transform.Find("Btn_Pause").gameObject;
+		m_animState = m_stateBackGo.transform.GetComponent<Animator> ();
 
 		InitaializeChipsImg ();
 	}
 
-	void Start()
+	protected virtual void Start()
 	{
-		m_goMainUI.SetActive (false);
-		m_goCustom.SetActive (false);
+		m_mainUIGo.SetActive (false);
+		m_customGo.SetActive (false);
 		m_bCustomed = false;
 	}
 
-	void FixedUpdate()
-	{
-		if(m_goMainUI.activeSelf)
-		{
-			m_ImgGauge.fillAmount += Time.fixedDeltaTime*0.1f;
-			if(m_ImgGauge.fillAmount>=1)
-			{
-				m_animGauge.SetBool ("Full",true);
-			}
-		}
-	}
+    protected void InitaializeChipsImg()
+    {
+        m_textSelect.text = "";
 
-	public void ClearSelectedIcons()
+        Texture2D tex2Dmask = Resources.Load<Texture2D>("mask");
+        m_spriteMask = Sprite.Create(tex2Dmask, new Rect(0, 0, tex2Dmask.width, tex2Dmask.height), new Vector2(0, 0));
+
+        for (int i = 0; i < 10; i++)
+        {
+            string szTmp = "Chip_" + i;
+            m_arGoChips[i] = m_chipInfo.Find(szTmp).gameObject;
+            m_arIconImgs[i] = m_arGoChips[i].transform.Find("Icon").GetComponent<Image>();
+            m_arIconImgs[i].sprite = m_spriteMask;
+            m_arTextCodes[i] = m_arGoChips[i].transform.Find("Code").GetComponent<Text>();
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            string szTmp = "Icon_" + i;
+            m_arSelectIcons[i] = m_selectedChip.Find(szTmp).GetComponent<Image>();
+            m_arSelectIcons[i].sprite = m_spriteMask;
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            string szTmp = "Chip_" + i;
+            m_arUseIcons[i] = m_battleSlot.Find(szTmp).GetComponent<Image>();
+            m_arUseIcons[i].sprite = m_spriteMask;
+        }
+    }
+
+    #endregion
+
+    void Update()
+    {
+        if (!StageMgr.Inst.IsPlay)
+            return;
+
+        if (m_mainUIGo.activeSelf)
+        {
+            m_ImgGauge.fillAmount += Time.deltaTime * 0.1f;
+            if (m_ImgGauge.fillAmount >= 1)
+            {
+                m_animGauge.SetBool("Full", true);
+            }
+        }
+    }
+
+    public void ClearSelectedIcons()
 	{
 		for(int i=0;i<5;i++)
 		{
 			m_arSelectIcons [i].sprite = m_spriteMask;
 		}
 
-		m_imgChip.sprite = m_spriteMask;
+		m_chipImg.sprite = m_spriteMask;
 		m_textSelect.text = "";
 	}
 	public void ClearUseChips()
@@ -144,44 +171,46 @@ public class UIMgr :MonoBehaviour{
 		}
 	}
 
-	public void SetActiveMain()
-	{
-		bool bActive = m_goMainUI.activeSelf;
+    #region Setter
 
-		m_goMainUI.SetActive (!bActive);
+    public void SetActiveMain()
+	{
+		bool bActive = m_mainUIGo.activeSelf;
+
+		m_mainUIGo.SetActive (!bActive);
 
 		m_bGamed = !bActive;
 	}
 	public void SetActiveMain(bool bActive)
 	{
-		m_goMainUI.SetActive (bActive);
+		m_mainUIGo.SetActive (bActive);
 		m_bGamed = bActive;
 	}
 	public void SetActiveCustom()
 	{
-		bool bActive = m_goCustom.activeSelf;
+		bool bActive = m_customGo.activeSelf;
 
-		m_goCustom.SetActive (!bActive);
+		m_customGo.SetActive (!bActive);
 
 		m_bCustomed = !bActive;
 	}
 
 	public void SetCustomConfirm()
 	{
-		StageMgr.GetInst ().PlusCurTurn ();
+		StageMgr.Inst.PlusCurTurn ();
 
-		m_goCustom.SetActive (false);
+		m_customGo.SetActive (false);
 
 		m_bCustomed = false;
 	}
 
 	public void SetImageChips(Sprite sprite)
 	{
-		m_imgChip.sprite=sprite;
+		m_chipImg.sprite=sprite;
 	}
 	public void SetImageChipsMask()
 	{
-		m_imgChip.sprite = m_spriteMask;
+		m_chipImg.sprite = m_spriteMask;
 	}
 
 	public void SetActivePause()
@@ -191,26 +220,28 @@ public class UIMgr :MonoBehaviour{
 			m_bPause = false;
 			if(m_bCustomed==true)
 			{
-				m_goCustom.SetActive (true);
+				m_customGo.SetActive (true);
 			}
 			else if(m_bGamed==true)
 			{
-				m_goMainUI.SetActive (true);
+				m_mainUIGo.SetActive (true);
 			}
-			m_goPausedMenu.SetActive (false);
-			m_goPausedButton.SetActive (true);
+			m_pausedMenuGo.SetActive (false);
+			m_pausedButtonGo.SetActive (true);
 		}
 		else
 		{
 			m_bPause = true;
-			m_goCustom.SetActive (false);
-			m_goMainUI.SetActive (false);
-			m_goPausedMenu.SetActive (true);
-			m_goPausedButton.SetActive (false);
+			m_customGo.SetActive (false);
+			m_mainUIGo.SetActive (false);
+			m_pausedMenuGo.SetActive (true);
+			m_pausedButtonGo.SetActive (false);
 		}
 	}
+    #endregion
+    #region Getter
 
-	public Animator GetGaugeAnim()
+    public Animator GetGaugeAnim()
 	{
 		return m_animGauge;
 	}
@@ -248,7 +279,7 @@ public class UIMgr :MonoBehaviour{
 	}
 	public GameObject GetMsgUI()
 	{
-		return m_goMsg;
+		return m_msgGo;
 	}
 	public Animator GetAnimMsgUI()
 	{
@@ -260,7 +291,7 @@ public class UIMgr :MonoBehaviour{
 	}
 	public Animator GetAnimStateUI()
 	{
-		m_goStateBack.SetActive (true);
+		m_stateBackGo.SetActive (true);
 		return m_animState;
 	}
 
@@ -273,43 +304,6 @@ public class UIMgr :MonoBehaviour{
 		return m_arUseIcons [nIndex];
 	}
 
-	private void InitaializeChipsImg()
-	{
-		Transform goChips = m_goCustom.transform.Find("CustomMain").Find("ChipsInfo");
-		m_imgChip =m_goCustom.transform.Find("CustomMain").Find("ChipImage").GetComponent<Image>();
-		m_textSelect = m_goCustom.transform.Find("CustomMain").Find ("ChipText").GetComponent<Text>();
-		m_textSelect.text = "";
-
-		Texture2D tex2Dmask = Resources.Load <Texture2D>("mask");
-		m_spriteMask = Sprite.Create (tex2Dmask, new Rect (0, 0, tex2Dmask.width, tex2Dmask.height), new Vector2 (0, 0));
-
-		for(int i=0;i<10;i++)
-		{
-			string szTmp = "Chip_"+i;
-			m_arGoChips [i] = goChips.Find (szTmp).gameObject;
-			m_arIconImgs [i] = m_arGoChips [i].transform.Find ("Icon").GetComponent<Image> ();
-			m_arIconImgs [i].sprite = m_spriteMask;
-			m_arTextCodes [i] = m_arGoChips [i].transform.Find ("Code").GetComponent<Text> ();
-		}
-
-		Transform goSelect = m_goCustom.transform.Find ("CustomMain").Find("SelectChips");
-
-		for(int i=0;i<5;i++)
-		{
-			string szTmp = "Icon_" + i;
-			m_arSelectIcons [i] = goSelect.Find (szTmp).GetComponent<Image> ();
-			m_arSelectIcons [i].sprite = m_spriteMask;
-		}
-
-		Transform goChipSlot = m_goMainUI.transform.Find ("BattleCardSlot");
-
-		for(int i=0;i<5;i++)
-		{
-			string szTmp = "Chip_" + i;
-			m_arUseIcons [i] = goChipSlot.Find (szTmp).GetComponent<Image> ();
-			m_arUseIcons [i].sprite = m_spriteMask;
-		}
-	}
-
+    #endregion
 
 }
